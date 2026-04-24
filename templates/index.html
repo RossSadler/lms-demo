@@ -2,204 +2,162 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>LMS Prototype</title>
+  <title>AI Course Generator Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>LMS Prototype</h1>
-      <p class="muted">Upload a .docx file to create a new job.</p>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Client demo</p>
+        <h1>AI Course Generator</h1>
+        <p class="hero-copy">Turn a Word document into a structured LMS-style training course with lessons, narration options, and a ready-to-view demo output.</p>
+      </div>
+      <div class="hero-panel">
+        <div class="hero-stat"><strong>01</strong><span>Upload document</span></div>
+        <div class="hero-stat"><strong>02</strong><span>Generate course</span></div>
+        <div class="hero-stat"><strong>03</strong><span>Open demo</span></div>
+      </div>
+    </header>
 
-      {% if error %}
-        <div class="notice">{{ error }}</div>
-      {% endif %}
+    {% if error %}<div class="notice">{{ error }}</div>{% endif %}
+
+    <section class="card card-feature">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Create a course</p>
+          <h2>Upload your source document</h2>
+          <p class="muted">For the smoothest demo, use Fast mode and generate a short sample first.</p>
+        </div>
+        <span class="badge badge-running">Demo safe</span>
+      </div>
 
       <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".docx" required />
+        <div class="upload-box">
+          <input type="file" name="file" accept=".docx" required />
+          <p class="help">Accepted format: .docx</p>
+        </div>
 
         <div class="form-grid">
-
-          <!-- LEFT: PROCESSING OPTIONS -->
-          <div>
-            <h3>Processing options</h3>
-
+          <div class="option-panel">
+            <h3>Output options</h3>
             <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" name="run_audio" />
-                Generate audio
-              </label>
-
-              <label class="checkbox-label">
-                <input type="checkbox" name="run_images" />
-                Generate images
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="run_video" />
-                Generate intro video
-              </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="fast_mode" />
-                Fast mode
-              </label>
+              <label class="checkbox-card"><input type="checkbox" name="run_audio" /><span><strong>Generate audio</strong><small>Create narration files using ElevenLabs.</small></span></label>
+              <label class="checkbox-card"><input type="checkbox" name="run_images" /><span><strong>Generate visuals</strong><small>Create supporting lesson images. Slower, but useful later.</small></span></label>
+              {% if heygen_enabled %}
+                <label class="checkbox-card"><input type="checkbox" name="run_video" /><span><strong>Generate intro video</strong><small>Create an AI presenter intro with HeyGen.</small></span></label>
+              {% else %}
+                <label class="checkbox-card checkbox-card-disabled"><input type="checkbox" disabled /><span><strong>Intro video disabled</strong><small>HeyGen is switched off for this demo build.</small></span></label>
+              {% endif %}
+              <label class="checkbox-card checkbox-card-recommended"><input type="checkbox" name="fast_mode" checked /><span><strong>Fast mode</strong><small>Recommended for live demos. Creates a smaller sample quickly.</small></span></label>
             </div>
           </div>
 
-          <!-- RIGHT: LESSON LIMITS -->
-          <div>
-            <h3>Lesson limits</h3>
-
+          <div class="option-panel">
+            <h3>Lesson settings</h3>
             <div class="field">
-              <label for="batch_size">Batch size</label>
+              <label for="batch_size">Lessons this run</label>
               <input type="number" id="batch_size" name="batch_size" value="5" min="1" max="50" />
-              <div class="help">How many lessons to process in this run.</div>
+              <div class="help">How many lessons to generate immediately.</div>
             </div>
-
             <div class="field">
-              <label for="max_total_lessons">Max total lessons</label>
-              <input type="number" id="max_total_lessons" name="max_total_lessons" value="10" min="1" max="200" />
-              <div class="help">
-                Maximum lessons to generate. Ignored if Smart defaults or Full document is selected.
-              </div>
+              <label for="max_total_lessons">Maximum lessons</label>
+              <input type="number" id="max_total_lessons" name="max_total_lessons" value="5" min="1" max="200" />
+              <div class="help">For demos, keep this between 3 and 5.</div>
             </div>
-
             <div class="field">
-              <label class="checkbox-label">
-                <input type="checkbox" name="smart_defaults" checked />
-                Smart defaults
-              </label>
-              <div class="help">Auto-adjust lesson limits based on document size.</div>
+              <label class="checkbox-label"><input type="checkbox" name="smart_defaults" /> Smart defaults</label>
+              <div class="help">Let the system choose lesson limits based on document size.</div>
             </div>
-
             <div class="field">
-              <label class="checkbox-label">
-                <input type="checkbox" name="no_limit" />
-                Generate all lessons (no limit)
-              </label>
-              <div class="help">
-                Ignore max total lessons and use all detected sections.
-              </div>
+              <label class="checkbox-label"><input type="checkbox" name="no_limit" /> Full document mode</label>
+              <div class="help">Use every detected section. Avoid this during a live demo.</div>
             </div>
-
           </div>
         </div>
 
-        <div class="toolbar">
-          <button type="submit">Upload and continue</button>
+        <div class="toolbar toolbar-main">
+          <button type="submit">Create course</button>
+          <span class="muted">Typical preview: 1-10 minutes depending on selected options.</span>
         </div>
       </form>
-    </div>
+    </section>
 
-    <!-- RECENT JOBS -->
-    <div class="card">
-      <h2>Recent jobs</h2>
+    <section class="card">
+      <div class="section-heading">
+        <div><p class="eyebrow">Recent output</p><h2>Recent course builds</h2></div>
+        <a class="button button-secondary button-small" href="/jobs">View all</a>
+      </div>
 
       {% if jobs %}
         <div class="table-wrap">
           <table class="jobs">
-            <thead>
-              <tr>
-                <th>Job</th>
-                <th>File</th>
-                <th>Status</th>
-                <th>Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Course</th><th>File</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead>
             <tbody>
               {% for job in jobs %}
                 <tr>
                   <td><code>{{ job.job_id }}</code></td>
                   <td>{{ job.original_filename or "-" }}</td>
-
                   <td>
                     {% set state = job.state or "unknown" %}
-                    {% if state == "complete" %}
-                      <span class="badge badge-complete">complete</span>
-                    {% elif state == "running" %}
-                      <span class="badge badge-running">running</span>
-                    {% elif state == "failed" %}
-                      <span class="badge badge-failed">failed</span>
-                    {% else %}
-                      <span class="badge badge-other">{{ state }}</span>
-                    {% endif %}
+                    {% if state == "complete" %}<span class="badge badge-complete">ready</span>
+                    {% elif state == "running" %}<span class="badge badge-running">building</span>
+                    {% elif state == "failed" %}<span class="badge badge-failed">failed</span>
+                    {% else %}<span class="badge badge-other">{{ state }}</span>{% endif %}
                   </td>
-
                   <td class="muted">{{ job.updated_at or "-" }}</td>
-
-                  <td>
-                    <div class="actions">
-                      {% if job.state == "complete" and job.demo_path %}
-                        <a class="button button-secondary button-small" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>
-                      {% endif %}
-                      <a class="button button-secondary button-small" href="/progress/{{ job.job_id }}">Progress</a>
-                      <a class="button button-secondary button-small" href="/result/{{ job.job_id }}">Result</a>
-                      <button class="button-danger button-small" type="button" onclick="deleteJob('{{ job.job_id }}')">Delete</button>
-                    </div>
-                  </td>
+                  <td><div class="actions">
+                    {% if job.state == "complete" and job.demo_path %}<a class="button button-small" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>{% endif %}
+                    <a class="button button-secondary button-small" href="/result/{{ job.job_id }}">Details</a>
+                    <button class="button-danger button-small" type="button" onclick="deleteJob('{{ job.job_id }}')">Delete</button>
+                  </div></td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-
-        <p class="spacer-top">
-          <a href="/jobs">View full job history</a>
-        </p>
-
       {% else %}
-        <p class="muted">No jobs yet.</p>
+        <p class="muted">No course builds yet.</p>
       {% endif %}
-    </div>
+    </section>
   </div>
 
-  <!-- DELETE JOB -->
   <script>
     async function deleteJob(jobId) {
-      const ok = confirm("Delete this job?");
+      const ok = confirm("Delete this course build?");
       if (!ok) return;
-
       const res = await fetch(`/delete/${jobId}`, { method: "POST" });
       const data = await res.json();
-
-      if (data.ok) {
-        window.location.reload();
-      } else {
-        alert(data.error || "Failed to delete job.");
-      }
+      if (data.ok) window.location.reload();
+      else alert(data.error || "Failed to delete job.");
     }
-  </script>
 
-  <!-- FORM LOGIC -->
-  <script>
     const smart = document.querySelector('[name="smart_defaults"]');
     const noLimit = document.querySelector('[name="no_limit"]');
     const maxLessons = document.querySelector('[name="max_total_lessons"]');
+    const batchSize = document.querySelector('[name="batch_size"]');
 
     function updateState() {
-      if (noLimit.checked || smart.checked) {
-        maxLessons.disabled = true;
-      } else {
-        maxLessons.disabled = false;
-      }
+      if (!smart || !noLimit || !maxLessons) return;
+      maxLessons.disabled = Boolean(noLimit.checked || smart.checked);
     }
 
-    smart.addEventListener('change', () => {
-      if (smart.checked) {
-        noLimit.checked = false;
-      }
+    if (smart && noLimit) {
+      smart.addEventListener("change", () => { if (smart.checked) noLimit.checked = false; updateState(); });
+      noLimit.addEventListener("change", () => { if (noLimit.checked) smart.checked = false; updateState(); });
       updateState();
-    });
+    }
 
-    noLimit.addEventListener('change', () => {
-      if (noLimit.checked) {
-        smart.checked = false;
+    if (batchSize && maxLessons) {
+      function syncLessonInputs() {
+        const batch = Number(batchSize.value || 1);
+        const max = Number(maxLessons.value || 1);
+        if (batch > max) batchSize.value = max;
       }
-      updateState();
-    });
-
-    updateState();
+      batchSize.addEventListener("change", syncLessonInputs);
+      maxLessons.addEventListener("change", syncLessonInputs);
+    }
   </script>
 </body>
 </html>

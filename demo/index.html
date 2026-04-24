@@ -13,44 +13,61 @@
 
   <div class="demo-shell">
     <header class="demo-header">
-      <div class="logo">ARPIM</div>
-      <div>
-        <h1>ARPIM Training</h1>
-        <p>Code Romania - Learning Module</p>
+      <div class="brand-block">
+        <div class="logo">ARPIM</div>
+        <div class="header-text">
+          <h1>ARPIM Training</h1>
+          <p>Code Romania - Learning Module</p>
+        </div>
       </div>
+
+      <a href="/" class="back-home">Back to generator</a>
     </header>
 
     <main class="demo-layout">
       <aside class="sidebar">
+        <div class="sidebar-top">
+          <p class="eyebrow">Course menu</p>
+          <h2>Lessons</h2>
+        </div>
         <div id="lessonList" class="lesson-list"></div>
       </aside>
 
       <section class="lesson-card">
+        <div class="lesson-top">
+          <div>
+            <p id="lessonMeta" class="lesson-meta">Lesson 1 of 1</p>
+            <h2 id="lessonTitle">Lesson Title</h2>
+          </div>
+          <div class="lesson-pill">Training demo</div>
+        </div>
+
         <div class="progress-track">
           <div id="progressFill" class="progress-fill"></div>
         </div>
 
-        <p id="lessonMeta" class="lesson-meta">Lesson 1 of 1</p>
-        <h2 id="lessonTitle">Lesson Title</h2>
-
-        <div id="lessonBody" class="lesson-body"></div>
-
         <div id="videoBlock" class="media-block hidden">
-          <h3>Course Intro Video</h3>
+          <h3>Course intro video</h3>
           <video id="lessonVideo" controls></video>
         </div>
 
         <div id="audioBlock" class="media-block hidden">
+          <h3>Audio narration</h3>
           <audio id="lessonAudio" controls></audio>
         </div>
 
+        <div class="content-panel">
+          <h3>Lesson content</h3>
+          <div id="lessonBody" class="lesson-body"></div>
+        </div>
+
         <div class="script-section">
-          <h3>Presenter Script</h3>
+          <h3>Presenter script</h3>
           <div id="presenterScript" class="script-box"></div>
         </div>
 
         <div class="nav-row">
-          <button id="prevBtn" type="button">Previous</button>
+          <button id="prevBtn" type="button" class="secondary-btn">Previous</button>
           <button id="nextBtn" type="button">Next</button>
         </div>
       </section>

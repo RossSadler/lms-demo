@@ -443,7 +443,8 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
     run_video = bool(options.get("run_video", False))
     demo_safe_mode = bool(options.get("demo_safe_mode", True))
     batch_size = int(options.get("batch_size", 5))
-    max_total_lessons = int(options.get("max_total_lessons", 10))
+    max_total_lessons = int(options.get("max_total_lessons", 5))
+    requested_lessons = int(options.get("requested_lessons", max_total_lessons))
     fast_mode = bool(options.get("fast_mode", False))
 
     print("OPTIONS RECEIVED:", options)
@@ -471,13 +472,14 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
         job_dir=job_dir,
         status="running",
         stage="starting",
-        message="Pipeline starting.",
+        message="Preparing your course build.",
         run_audio=run_audio,
         run_images=run_images,
         run_video=run_video,
         fast_mode=fast_mode,
         demo_safe_mode=demo_safe_mode,
         max_total_lessons=max_total_lessons,
+        requested_lessons=requested_lessons,
         batch_size=batch_size,
     )
 
@@ -486,18 +488,21 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
     update_status(
         job_dir=job_dir,
         stage="parsing",
-        message="Reading uploaded document.",
+        message="Reading the uploaded document.",
     )
 
     paragraphs = extract_paragraphs(input_path)
     sections = split_into_sections(paragraphs)
 
-    total_lessons = min(len(sections), max_total_lessons)
+    detected_sections = len(sections)
+    total_lessons = min(detected_sections, max_total_lessons)
 
     update_status(
         job_dir=job_dir,
         stage="parsed",
-        message=f"Found {len(sections)} sections in document.",
+        message=f"Detected {detected_sections} sections. Building {total_lessons} lesson{'s' if total_lessons != 1 else ''}.",
+        requested_lessons=requested_lessons,
+        detected_sections=detected_sections,
         total_lessons=total_lessons,
     )
 
@@ -527,7 +532,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
         ]
         start_index = len(existing)
 
-        remaining_allowed = max_total_lessons - start_index
+        remaining_allowed = total_lessons - start_index
         if remaining_allowed <= 0:
             update_status(
                 job_dir=job_dir,
@@ -537,12 +542,12 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                 total_lessons=total_lessons,
             )
         else:
-            batch_limit = min(batch_size, remaining_allowed, len(sections) - start_index)
+            batch_limit = min(batch_size, remaining_allowed, total_lessons - start_index)
 
             update_status(
                 job_dir=job_dir,
                 stage="lessons",
-                message=f"Generating up to {batch_limit} lessons.",
+                message=f"Generating {batch_limit} lesson{'s' if batch_limit != 1 else ''}.",
                 current_lesson=start_index + 1 if batch_limit > 0 else start_index,
                 completed_lessons=start_index,
                 total_lessons=total_lessons,
@@ -558,7 +563,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                     update_status(
                         job_dir=job_dir,
                         stage="lessons",
-                        message=f"Generating lesson {n} of {total_lessons}.",
+                        message=f"Writing lesson {n} of {total_lessons}.",
                         current_lesson=n,
                         completed_lessons=n - 1,
                         total_lessons=total_lessons,
@@ -585,7 +590,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                     update_status(
                         job_dir=job_dir,
                         stage="lessons",
-                        message=f"Lesson {n} generated: {lesson['lesson_title']}",
+                        message=f"Lesson {n} ready: {lesson['lesson_title']}",
                         current_lesson=n,
                         completed_lessons=n,
                         total_lessons=total_lessons,
@@ -596,7 +601,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                             update_status(
                                 job_dir=job_dir,
                                 stage="audio",
-                                message=f"Generating audio for lesson {n} of {total_lessons}.",
+                                message=f"Creating audio for lesson {n} of {total_lessons}.",
                                 current_lesson=n,
                                 completed_lessons=n - 1,
                                 total_lessons=total_lessons,
@@ -623,7 +628,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                             update_status(
                                 job_dir=job_dir,
                                 stage="audio",
-                                message=f"Audio saved for lesson {n}.",
+                                message=f"Audio ready for lesson {n}.",
                                 current_lesson=n,
                                 completed_lessons=n,
                                 total_lessons=total_lessons,
@@ -711,7 +716,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
         update_status(
             job_dir=job_dir,
             stage="images",
-            message="Starting image generation.",
+            message="Preparing supporting visuals.",
             total_lessons=total_lessons,
         )
 
@@ -738,7 +743,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                 update_status(
                     job_dir=job_dir,
                     stage="images",
-                    message=f"Generating image for lesson {n}.",
+                    message=f"Generating visual for lesson {n}.",
                     current_lesson=n,
                     total_lessons=total_lessons,
                 )
@@ -760,7 +765,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                 update_status(
                     job_dir=job_dir,
                     stage="images",
-                    message=f"Image saved for lesson {n}.",
+                    message=f"Visual ready for lesson {n}.",
                     current_lesson=n,
                     total_lessons=total_lessons,
                 )
@@ -823,7 +828,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
                 update_status(
                     job_dir=job_dir,
                     stage="video_intro",
-                    message="Starting intro video generation.",
+                    message="Starting AI presenter intro video.",
                 )
 
                 video_result = generate_intro_video(
@@ -870,7 +875,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
         job_dir=job_dir,
         status="running",
         stage="pipeline_complete",
-        message="Pipeline completed. Building demo.",
+        message="Course content generated. Packaging the demo.",
         completed_lessons=total_lessons,
         total_lessons=total_lessons,
         lesson_failures=len(lesson_failures),
@@ -884,7 +889,7 @@ def run_pipeline(job_dir: Path, input_path: Path, options: dict | None = None) -
             job_dir=job_dir,
             status="complete",
             stage="complete",
-            message="Pipeline and demo build completed.",
+            message="Course demo is ready.",
             completed_lessons=total_lessons,
             total_lessons=total_lessons,
             demo_path=demo_path,

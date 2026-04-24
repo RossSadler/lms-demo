@@ -7,15 +7,14 @@ const lessonTitle = document.getElementById("lessonTitle");
 const lessonBody = document.getElementById("lessonBody");
 const presenterScript = document.getElementById("presenterScript");
 const progressFill = document.getElementById("progressFill");
-
-const videoBlock = document.getElementById("videoBlock");
-const lessonVideo = document.getElementById("lessonVideo");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
 
 const audioBlock = document.getElementById("audioBlock");
 const lessonAudio = document.getElementById("lessonAudio");
 
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
+const videoBlock = document.getElementById("videoBlock");
+const lessonVideo = document.getElementById("lessonVideo");
 
 function escapeHtml(value) {
   return String(value || "")
@@ -26,25 +25,43 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function nl2br(value) {
-  return escapeHtml(value).replace(/\n/g, "<br>");
+function paragraphise(text) {
+  const chunks = String(text || "")
+    .split(/\n{2,}/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+
+  if (!chunks.length) {
+    return "<p>No lesson content was generated for this item.</p>";
+  }
+
+  return chunks.map((chunk) => `<p>${escapeHtml(chunk).replaceAll("\n", "<br>")}</p>`).join("");
 }
 
 function renderLessonList() {
   lessonList.innerHTML = "";
 
-  lessons.forEach((lesson, index) => {
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = index === currentIndex ? "lesson-item active" : "lesson-item";
-    item.innerHTML = `${index + 1}. ${escapeHtml(lesson.lesson_title || `Lesson ${index + 1}`)}`;
+  if (!lessons.length) {
+    lessonList.innerHTML = '<p class="lesson-empty">No lessons available.</p>';
+    return;
+  }
 
-    item.addEventListener("click", () => {
+  lessons.forEach((lesson, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "lesson-item";
+    if (index === currentIndex) button.classList.add("active");
+
+    const number = lesson.lesson_number || index + 1;
+    const title = lesson.lesson_title || `Lesson ${number}`;
+    button.textContent = `${number}. ${title}`;
+
+    button.addEventListener("click", () => {
       currentIndex = index;
       render();
     });
 
-    lessonList.appendChild(item);
+    lessonList.appendChild(button);
   });
 }
 
@@ -53,9 +70,7 @@ function renderMedia(lesson) {
     lessonVideo.src = lesson.video;
     videoBlock.classList.remove("hidden");
   } else {
-    lessonVideo.pause();
     lessonVideo.removeAttribute("src");
-    lessonVideo.load();
     videoBlock.classList.add("hidden");
   }
 
@@ -63,40 +78,39 @@ function renderMedia(lesson) {
     lessonAudio.src = lesson.audio;
     audioBlock.classList.remove("hidden");
   } else {
-    lessonAudio.pause();
     lessonAudio.removeAttribute("src");
-    lessonAudio.load();
     audioBlock.classList.add("hidden");
   }
 }
 
 function render() {
   if (!lessons.length) {
-    lessonMeta.textContent = "No lessons available";
-    lessonTitle.textContent = "No lesson data found";
-    lessonBody.innerHTML = "";
-    presenterScript.innerHTML = "";
+    lessonMeta.textContent = "No lessons";
+    lessonTitle.textContent = "No lesson data available";
+    lessonBody.innerHTML = "<p>The course package did not include lesson data.</p>";
+    presenterScript.textContent = "";
     progressFill.style.width = "0%";
     prevBtn.disabled = true;
     nextBtn.disabled = true;
     return;
   }
 
-  const lesson = lessons[currentIndex];
+  const lesson = lessons[currentIndex] || {};
+  const total = lessons.length;
+  const current = currentIndex + 1;
+  const progress = Math.round((current / total) * 100);
 
-  lessonMeta.textContent = `Lesson ${currentIndex + 1} of ${lessons.length}`;
-  lessonTitle.textContent = lesson.lesson_title || `Lesson ${currentIndex + 1}`;
-  lessonBody.innerHTML = `<p>${nl2br(lesson.lesson_body || "")}</p>`;
-  presenterScript.innerHTML = nl2br(lesson.presenter_script || "");
-
-  const progress = ((currentIndex + 1) / lessons.length) * 100;
+  lessonMeta.textContent = `Lesson ${current} of ${total}`;
+  lessonTitle.textContent = lesson.lesson_title || `Lesson ${current}`;
+  lessonBody.innerHTML = paragraphise(lesson.lesson_body);
+  presenterScript.textContent = lesson.presenter_script || "No presenter script was generated for this lesson.";
   progressFill.style.width = `${progress}%`;
 
   prevBtn.disabled = currentIndex === 0;
-  nextBtn.disabled = currentIndex === lessons.length - 1;
+  nextBtn.disabled = currentIndex >= total - 1;
 
-  renderLessonList();
   renderMedia(lesson);
+  renderLessonList();
 }
 
 prevBtn.addEventListener("click", () => {

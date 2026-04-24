@@ -2,84 +2,115 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Job Result</title>
+  <title>Course Ready</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>Job Result</h1>
+  <div class="app-shell narrow-shell">
+    <section class="card result-hero">
+      {% set state = job.state or job.status or "unknown" %}
 
-      {% if job.job_id %}
-        <p><strong>Job ID:</strong> <code>{{ job.job_id }}</code></p>
+      {% if state == "complete" %}
+        <p class="eyebrow">Course ready</p>
+        <h1>Your training demo is ready</h1>
+        <p class="hero-copy">
+          The uploaded document has been converted into a structured course demo.
+        </p>
+      {% elif state == "failed" %}
+        <p class="eyebrow">Build failed</p>
+        <h1>Something needs attention</h1>
+        <p class="hero-copy">The course could not be completed. Details are shown below.</p>
+      {% else %}
+        <p class="eyebrow">Course build</p>
+        <h1>Build details</h1>
+        <p class="hero-copy">Current course build information is shown below.</p>
       {% endif %}
 
-      <div class="kv">
-        <div><strong>Status</strong></div>
+      <div class="result-actions">
+        {% if job.job_id and state == "complete" and job.demo_path %}
+          <a class="button" href="/demo/{{ job.job_id }}/" target="_blank">Open course demo</a>
+        {% endif %}
+        {% if job.job_id %}
+          <a class="button button-secondary" href="/progress/{{ job.job_id }}">View progress</a>
+        {% endif %}
+        <a class="button button-secondary" href="/">Create another</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-heading">
         <div>
-          {% set state = job.state or job.status or "unknown" %}
-          {% if state == "complete" %}
-            <span class="badge badge-complete">complete</span>
-          {% elif state == "running" %}
-            <span class="badge badge-running">running</span>
-          {% elif state == "failed" %}
-            <span class="badge badge-failed">failed</span>
-          {% else %}
-            <span class="badge badge-other">{{ state }}</span>
+          <p class="eyebrow">Build summary</p>
+          <h2>Course details</h2>
+        </div>
+        {% if state == "complete" %}
+          <span class="badge badge-complete">ready</span>
+        {% elif state == "running" %}
+          <span class="badge badge-running">building</span>
+        {% elif state == "failed" %}
+          <span class="badge badge-failed">failed</span>
+        {% else %}
+          <span class="badge badge-other">{{ state }}</span>
+        {% endif %}
+      </div>
+
+      <div class="kv">
+        {% if job.job_id %}
+          <div><strong>Build ID</strong></div>
+          <div><code>{{ job.job_id }}</code></div>
+        {% endif %}
+
+        <div><strong>Source file</strong></div>
+        <div>{{ job.original_filename or "-" }}</div>
+
+        <div><strong>Status</strong></div>
+        <div>{{ job.message or "-" }}</div>
+
+        <div><strong>Lessons</strong></div>
+        <div>
+          {{ job.total_lessons or job.max_total_lessons or "-" }} lessons generated
+          {% if job.detected_sections %}
+            <span class="muted">from {{ job.detected_sections }} detected sections</span>
           {% endif %}
         </div>
 
-        <div><strong>Message</strong></div>
-        <div>{{ job.message or "-" }}</div>
+        <div><strong>Audio</strong></div>
+        <div>{{ "Enabled" if job.run_audio else "Off" }}</div>
 
-        <div><strong>File</strong></div>
-        <div>{{ job.original_filename or "-" }}</div>
+        <div><strong>Visuals</strong></div>
+        <div>{{ "Enabled" if job.run_images else "Off" }}</div>
 
-        <div><strong>Progress</strong></div>
-        <div>{{ job.progress if job.progress is not none else 0 }}%</div>
-
-        <div><strong>Created</strong></div>
-        <div>{{ job.created_at or "-" }}</div>
+        <div><strong>Intro video</strong></div>
+        <div>{{ "Enabled" if job.run_video else "Off" }}</div>
 
         <div><strong>Updated</strong></div>
         <div>{{ job.updated_at or "-" }}</div>
       </div>
+    </section>
 
-      <div class="top-links">
-        <a class="button button-secondary" href="/">Home</a>
-        <a class="button button-secondary" href="/jobs">All jobs</a>
-        {% if job.job_id %}
-          <a class="button button-secondary" href="/progress/{{ job.job_id }}">Progress</a>
-        {% endif %}
-        {% if job.state == "complete" and job.demo_path %}
-          <a class="button" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>
-        {% endif %}
-      </div>
-    </div>
-
-    {% if job.state == "complete" and job.video and job.video.video_path %}
-      <div class="card">
-        <h2>Course Intro Video</h2>
-        <video controls width="720" style="max-width: 100%; border-radius: 8px;">
+    {% if state == "complete" and job.video and job.video.video_path %}
+      <section class="card">
+        <h2>Course intro video</h2>
+        <video controls width="720" style="max-width: 100%; border-radius: 16px;">
           <source src="/video/{{ job.video.video_path.replace('\\', '/') }}" type="video/mp4">
           Your browser does not support the video tag.
         </video>
-      </div>
+      </section>
     {% endif %}
 
     {% if job.error %}
-      <div class="card">
+      <section class="card">
         <h2>Error</h2>
         <pre>{{ job.error }}</pre>
-      </div>
+      </section>
     {% endif %}
 
     {% if job.traceback %}
-      <div class="card">
-        <h2>Traceback</h2>
+      <section class="card">
+        <h2>Technical traceback</h2>
         <pre>{{ job.traceback }}</pre>
-      </div>
+      </section>
     {% endif %}
   </div>
 </body>

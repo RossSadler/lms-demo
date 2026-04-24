@@ -2,85 +2,38 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Job History</title>
+  <title>Course Builds</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>Job History</h1>
-
-      <div class="top-links">
-        <a class="button button-secondary" href="/">Home</a>
+  <div class="app-shell">
+    <section class="card">
+      <div class="section-heading">
+        <div><p class="eyebrow">Build history</p><h1>Course builds</h1><p class="muted">Review generated course demos and previous runs.</p></div>
+        <a class="button button-secondary" href="/">Create new course</a>
       </div>
-
       {% if jobs %}
-        <div class="table-wrap spacer-top">
-          <table class="jobs">
-            <thead>
-              <tr>
-                <th>Job ID</th>
-                <th>File</th>
-                <th>Status</th>
-                <th>Step</th>
-                <th>Updated</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for job in jobs %}
-                <tr>
-                  <td><code>{{ job.job_id }}</code></td>
-                  <td>{{ job.original_filename or "-" }}</td>
-                  <td>
-                    {% set state = job.state or "unknown" %}
-                    {% if state == "complete" %}
-                      <span class="badge badge-complete">complete</span>
-                    {% elif state == "running" %}
-                      <span class="badge badge-running">running</span>
-                    {% elif state == "failed" %}
-                      <span class="badge badge-failed">failed</span>
-                    {% else %}
-                      <span class="badge badge-other">{{ state }}</span>
-                    {% endif %}
-                  </td>
-                  <td>{{ job.step or "-" }}</td>
-                  <td class="muted">{{ job.updated_at or "-" }}</td>
-                  <td>
-                    <div class="actions">
-                      {% if job.state == "complete" and job.demo_path %}
-                        <a class="button button-secondary button-small" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>
-                      {% endif %}
-                      <a class="button button-secondary button-small" href="/progress/{{ job.job_id }}">Progress</a>
-                      <a class="button button-secondary button-small" href="/result/{{ job.job_id }}">Result</a>
-                      <button class="button-danger button-small" type="button" onclick="deleteJob('{{ job.job_id }}')">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <p class="muted">No jobs found.</p>
-      {% endif %}
-    </div>
+        <div class="table-wrap spacer-top"><table class="jobs">
+          <thead><tr><th>Build</th><th>File</th><th>Status</th><th>Process</th><th>Updated</th><th>Actions</th></tr></thead>
+          <tbody>{% for job in jobs %}<tr>
+            <td><code>{{ job.job_id }}</code></td><td>{{ job.original_filename or "-" }}</td>
+            <td>{% set state = job.state or "unknown" %}{% if state == "complete" %}<span class="badge badge-complete">ready</span>{% elif state == "running" %}<span class="badge badge-running">building</span>{% elif state == "failed" %}<span class="badge badge-failed">failed</span>{% else %}<span class="badge badge-other">{{ state }}</span>{% endif %}</td>
+            <td>{{ (job.step or "-").replace("_", " ") }}</td><td class="muted">{{ job.updated_at or "-" }}</td>
+            <td><div class="actions">{% if job.state == "complete" and job.demo_path %}<a class="button button-small" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>{% endif %}<a class="button button-secondary button-small" href="/result/{{ job.job_id }}">Details</a><button class="button-danger button-small" type="button" onclick="deleteJob('{{ job.job_id }}')">Delete</button></div></td>
+          </tr>{% endfor %}</tbody>
+        </table></div>
+      {% else %}<p class="muted">No course builds found.</p>{% endif %}
+    </section>
   </div>
-
   <script>
     async function deleteJob(jobId) {
-      const ok = confirm("Delete this job?");
+      const ok = confirm("Delete this course build?");
       if (!ok) return;
-
       const res = await fetch(`/delete/${jobId}`, { method: "POST" });
       const data = await res.json();
-
-      if (data.ok) {
-        window.location.reload();
-      } else {
-        alert(data.error || "Failed to delete job.");
-      }
+      if (data.ok) window.location.reload();
+      else alert(data.error || "Failed to delete job.");
     }
   </script>
 </body>

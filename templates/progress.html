@@ -2,36 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Job Progress</title>
+  <title>Building Course</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>Generating Course</h1>
-      <p><strong>Job ID:</strong> <code>{{ job_id }}</code></p>
+  <div class="app-shell narrow-shell">
+    <section class="card progress-card">
+      <p class="eyebrow">Course build in progress</p>
+      <h1>Building your training course</h1>
+      <p class="muted">The system is reading your document and turning it into structured LMS content.</p>
 
       <div class="bar-wrap">
         <div id="bar" class="bar"></div>
       </div>
 
-      <p class="progress-line">
-        <strong>Progress:</strong> <span id="progressText">0%</span>
-      </p>
+      <div class="progress-header">
+        <strong id="progressText">0%</strong>
+        <span id="liveStatus">Starting course build</span>
+      </div>
 
-      <div class="kv">
-        <div><strong>Status</strong></div>
-        <div><span id="state">Starting...</span></div>
-
-        <div><strong>Step</strong></div>
-        <div><span id="step">Preparing...</span></div>
-
-        <div><strong>Message</strong></div>
-        <div><span id="message">Launching background worker...</span></div>
-
-        <div><strong>Activity</strong></div>
-        <div><span id="liveStatus">Starting pipeline...</span></div>
+      <div class="status-grid">
+        <div class="status-tile">
+          <span>Current status</span>
+          <strong id="state">Starting</strong>
+        </div>
+        <div class="status-tile">
+          <span>Process</span>
+          <strong id="step">Preparing</strong>
+        </div>
+        <div class="status-tile status-tile-wide">
+          <span>What is happening</span>
+          <strong id="message">Launching background worker</strong>
+        </div>
       </div>
 
       <div id="errorBlock" class="hidden spacer-top">
@@ -42,11 +45,11 @@
       <div id="debugError" class="notice hidden"></div>
 
       <div class="top-links">
-        <a class="button button-secondary" href="/result/{{ job_id }}">Result</a>
-        <a class="button button-secondary" href="/jobs">All jobs</a>
+        <a id="openResultBtn" class="button hidden" href="/result/{{ job_id }}">Open result</a>
         <a class="button button-secondary" href="/">Home</a>
+        <a class="button button-secondary" href="/jobs">All builds</a>
       </div>
-    </div>
+    </section>
   </div>
 
   <script>
@@ -60,17 +63,19 @@
     const errorText = document.getElementById("errorText");
     const debugError = document.getElementById("debugError");
     const liveStatusEl = document.getElementById("liveStatus");
+    const openResultBtn = document.getElementById("openResultBtn");
 
     const activityMessages = [
-      "Reading document structure",
-      "Breaking content into lessons",
-      "Generating lesson scripts",
-      "Creating audio narration",
-      "Rendering AI avatar video",
-      "Finalising course output"
+      "Understanding your document structure",
+      "Identifying key learning topics",
+      "Designing the lesson flow",
+      "Writing training content",
+      "Preparing narration options",
+      "Packaging the course demo"
     ];
 
     let activityIndex = 0;
+    let hasStarted = false;
 
     function showDebug(message) {
       debugError.classList.remove("hidden");
@@ -84,64 +89,23 @@
       return Math.max(0, Math.min(100, progress));
     }
 
-    function calculateProgress(data) {
-      const raw = Number(data.progress);
-      if (Number.isFinite(raw) && raw > 1) {
-        return clampProgress(raw);
-      }
-
-      const completed = Number(data.completed_lessons || 0);
-      const total = Number(data.total_lessons || 0);
-      const stage = data.stage || data.step || "";
-
-      if (data.state === "complete" || data.status === "complete") {
-        return 100;
-      }
-
-      if (!total) return 0;
-
-      if (stage === "lessons") {
-        return Math.floor((completed / total) * 60);
-      }
-
-      if (stage === "audio") {
-        return 60 + Math.floor((completed / total) * 30);
-      }
-
-      if (stage === "images") {
-        return 90 + Math.floor((completed / total) * 10);
-      }
-
-      if (stage === "video_intro" || stage === "video_intro_polling") {
-        return Math.max(25, clampProgress(data.progress || 25));
-      }
-
-      if (stage === "video_intro_downloading") {
-        return Math.max(88, clampProgress(data.progress || 88));
-      }
-
-      if (stage === "video_intro_complete") {
-        return Math.max(92, clampProgress(data.progress || 92));
-      }
-
-      if (stage === "building_demo" || stage === "pipeline_complete") {
-        return 95;
-      }
-
-      return 0;
-    }
-
     function applyProgress(value) {
       const progress = clampProgress(value);
       bar.style.width = `${progress}%`;
       progressTextEl.textContent = `${progress}%`;
     }
 
-    function updateLiveStatus(step) {
-      const currentStep = String(step || "");
+    function prettyStage(stage) {
+      const value = String(stage || "").replaceAll("_", " ");
+      if (!value) return "-";
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function updateLiveStatus(stage) {
+      const currentStep = String(stage || "");
 
       if (currentStep.includes("video_intro_polling")) {
-        liveStatusEl.textContent = "Rendering AI avatar video - this can take around 5 minutes";
+        liveStatusEl.textContent = "Rendering AI presenter intro - this can take a few minutes";
         return;
       }
 
@@ -156,27 +120,27 @@
       }
 
       if (currentStep.includes("video")) {
-        liveStatusEl.textContent = "Preparing AI avatar video";
+        liveStatusEl.textContent = "Preparing AI presenter intro";
         return;
       }
 
       if (currentStep.includes("audio")) {
-        liveStatusEl.textContent = "Generating lesson audio";
+        liveStatusEl.textContent = "Creating lesson narration";
         return;
       }
 
       if (currentStep.includes("images")) {
-        liveStatusEl.textContent = "Generating lesson images";
+        liveStatusEl.textContent = "Creating supporting visuals";
         return;
       }
 
       if (currentStep.includes("lessons")) {
-        liveStatusEl.textContent = "Generating lesson content";
+        liveStatusEl.textContent = "Writing lesson content";
         return;
       }
 
       if (currentStep.includes("building_demo") || currentStep.includes("pipeline_complete")) {
-        liveStatusEl.textContent = "Building final course demo";
+        liveStatusEl.textContent = "Packaging the course demo";
         return;
       }
 
@@ -208,14 +172,13 @@
         }
 
         const data = await res.json();
-
-        const computed = calculateProgress(data);
-        applyProgress(computed);
-
+        const progress = clampProgress(data.progress || 0);
         const stage = data.step || data.stage || "";
 
+        applyProgress(progress);
+
         stateEl.textContent = data.state || data.status || "-";
-        stepEl.textContent = stage || "-";
+        stepEl.textContent = prettyStage(stage);
         messageEl.textContent = data.message || "-";
 
         updateLiveStatus(stage);
@@ -227,20 +190,21 @@
 
         if (data.state === "complete" || data.status === "complete") {
           applyProgress(100);
-          liveStatusEl.textContent = "Course complete - opening result page";
-          setTimeout(() => {
-            window.location.href = `/result/${jobId}`;
-          }, 500);
+          stateEl.textContent = "complete";
+          stepEl.textContent = "Complete";
+          liveStatusEl.textContent = "Course ready";
+          messageEl.textContent = data.message || "Your course demo is ready.";
+          openResultBtn.classList.remove("hidden");
           return;
         }
 
         if (data.state === "failed" || data.status === "failed") {
-          liveStatusEl.textContent = "Job failed - opening result page";
-          setTimeout(() => {
-            window.location.href = `/result/${jobId}`;
-          }, 500);
+          liveStatusEl.textContent = "Course build failed";
+          openResultBtn.textContent = "View details";
+          openResultBtn.classList.remove("hidden");
           return;
         }
+
       } catch (err) {
         showDebug(`Polling error: ${err.message}`);
       }
@@ -251,6 +215,7 @@
     (async () => {
       try {
         await startJob();
+        hasStarted = true;
       } catch (err) {
         showDebug(`Start error: ${err.message}`);
         return;
@@ -259,34 +224,5 @@
       poll();
     })();
   </script>
-
-  <style>
-    #liveStatus {
-      color: #6b7280;
-      font-style: italic;
-    }
-
-    #liveStatus::after {
-      content: "";
-      display: inline-block;
-      min-width: 18px;
-      animation: dots 1.4s steps(3, end) infinite;
-    }
-
-    @keyframes dots {
-      0% {
-        content: "";
-      }
-      33% {
-        content: ".";
-      }
-      66% {
-        content: "..";
-      }
-      100% {
-        content: "...";
-      }
-    }
-  </style>
 </body>
 </html>

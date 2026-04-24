@@ -34,10 +34,8 @@ from pipeline.status import (
 BASE_DIR = Path(__file__).resolve().parent
 RUNS_DIR = Path(os.getenv("RUNS_DIR", BASE_DIR / "runs")).resolve()
 DEMO_SAFE_MODE = os.getenv("DEMO_SAFE_MODE", "true").lower() in {"1", "true", "yes", "on"}
+HEYGEN_ENABLED = os.getenv("HEYGEN_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
 
-print("APP BASE DIR:", BASE_DIR.resolve())
-print("TEMPLATE FILE:", (BASE_DIR / "templates" / "index.html").resolve())
-print("PROGRESS TEMPLATE FILE:", (BASE_DIR / "templates" / "progress.html").resolve())
 
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -121,7 +119,7 @@ def run_job_background(job_id: str, input_path: str, options: dict) -> None:
 @app.route("/", methods=["GET"])
 def index():
     jobs = list_recent_jobs(limit=10)
-    return render_template("index.html", jobs=jobs)
+    return render_template("index.html", jobs=jobs, heygen_enabled=HEYGEN_ENABLED, demo_safe_mode=DEMO_SAFE_MODE)
 
 
 @app.route("/upload", methods=["POST"])
@@ -132,6 +130,8 @@ def upload():
         return render_template(
             "index.html",
             jobs=list_recent_jobs(limit=10),
+            heygen_enabled=HEYGEN_ENABLED,
+            demo_safe_mode=DEMO_SAFE_MODE,
             error="Please choose a .docx file first.",
         ), 400
 
@@ -139,18 +139,22 @@ def upload():
         return render_template(
             "index.html",
             jobs=list_recent_jobs(limit=10),
+            heygen_enabled=HEYGEN_ENABLED,
+            demo_safe_mode=DEMO_SAFE_MODE,
             error="Only .docx uploads are supported.",
         ), 400
 
     run_audio = form_checkbox("run_audio", default=False)
     run_images = form_checkbox("run_images", default=False)
     run_video = form_checkbox("run_video", default=False)
-    fast_mode = form_checkbox("fast_mode", default=False)
-    smart_defaults = form_checkbox("smart_defaults", default=True)
+    if not HEYGEN_ENABLED:
+        run_video = False
+    fast_mode = form_checkbox("fast_mode", default=True)
+    smart_defaults = form_checkbox("smart_defaults", default=False)
     no_limit = form_checkbox("no_limit", default=False)
 
     batch_size = form_int("batch_size", default=5, min_value=1, max_value=50)
-    max_total_lessons = form_int("max_total_lessons", default=10, min_value=1, max_value=200)
+    max_total_lessons = form_int("max_total_lessons", default=5, min_value=1, max_value=200)
 
     job_id = uuid.uuid4().hex[:12]
     safe_name = secure_filename(uploaded_file.filename)
@@ -210,7 +214,8 @@ def upload():
         detected_sections=detected_sections,
         batch_size=batch_size,
         max_total_lessons=max_total_lessons,
-        message="File uploaded. Waiting to start.",
+        requested_lessons=max_total_lessons,
+        message="Document uploaded. Ready to build your training course.",
     )
 
     return redirect(url_for("progress_page", job_id=job_id))
@@ -249,10 +254,11 @@ def start_job(job_id):
         "run_lessons": True,
         "run_audio": status.get("run_audio") is True,
         "run_images": status.get("run_images") is True,
-        "run_video": status.get("run_video") is True,
+        "run_video": status.get("run_video") is True and HEYGEN_ENABLED,
         "fast_mode": status.get("fast_mode") is True,
         "batch_size": int(status.get("batch_size", 5) or 5),
-        "max_total_lessons": int(status.get("max_total_lessons", 10) or 10),
+        "max_total_lessons": int(status.get("max_total_lessons", 5) or 5),
+        "requested_lessons": int(status.get("requested_lessons", status.get("max_total_lessons", 5)) or 5),
         "demo_safe_mode": DEMO_SAFE_MODE,
     }
 
@@ -281,7 +287,7 @@ def start_job(job_id):
             "ok": True,
             "job_id": job_id,
             "state": "queued",
-            "message": "Job started in background.",
+            "message": "Course build started.",
         }
     )
 
@@ -394,6 +400,8 @@ def file_too_large(_err):
     return render_template(
         "index.html",
         jobs=list_recent_jobs(limit=10),
+        heygen_enabled=HEYGEN_ENABLED,
+        demo_safe_mode=DEMO_SAFE_MODE,
         error="Upload too large for current server limit.",
     ), 413
 
