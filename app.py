@@ -41,7 +41,12 @@ print("PROGRESS TEMPLATE FILE:", (BASE_DIR / "templates" / "progress.html").reso
 
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder="static",
+    static_url_path="/static"
+)
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "dev-secret-key")
 app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_UPLOAD_MB", "50")) * 1024 * 1024
