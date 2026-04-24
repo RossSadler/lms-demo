@@ -19,7 +19,22 @@
 
       <div class="progress-header">
         <strong id="progressText">0%</strong>
-        <span id="liveStatus">Starting course build</span>
+        <div class="progress-side">
+          <span id="liveStatus">Starting course build</span>
+          <span id="elapsedTime" class="timer-pill">00:00</span>
+        </div>
+      </div>
+
+      <div id="renderingPanel" class="rendering-panel hidden">
+        <div class="rendering-orb">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div>
+          <strong>HeyGen is rendering your presenter intro</strong>
+          <p>This stage can take a few minutes. The page is still working.</p>
+        </div>
       </div>
 
       <div class="status-grid">
@@ -64,6 +79,10 @@
     const debugError = document.getElementById("debugError");
     const liveStatusEl = document.getElementById("liveStatus");
     const openResultBtn = document.getElementById("openResultBtn");
+    const elapsedTimeEl = document.getElementById("elapsedTime");
+    const renderingPanel = document.getElementById("renderingPanel");
+
+    const startedAt = Date.now();
 
     const activityMessages = [
       "Understanding your document structure",
@@ -75,7 +94,17 @@
     ];
 
     let activityIndex = 0;
-    let hasStarted = false;
+
+    function formatElapsed(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    }
+
+    setInterval(() => {
+      elapsedTimeEl.textContent = formatElapsed(Date.now() - startedAt);
+    }, 1000);
 
     function showDebug(message) {
       debugError.classList.remove("hidden");
@@ -101,16 +130,27 @@
       return value.charAt(0).toUpperCase() + value.slice(1);
     }
 
+    function updateRenderingPanel(stage) {
+      const currentStep = String(stage || "");
+      const isVideoStage = currentStep.includes("video_intro_polling") || currentStep.includes("video_intro");
+
+      if (isVideoStage && !currentStep.includes("complete") && !currentStep.includes("failed")) {
+        renderingPanel.classList.remove("hidden");
+      } else {
+        renderingPanel.classList.add("hidden");
+      }
+    }
+
     function updateLiveStatus(stage) {
       const currentStep = String(stage || "");
 
       if (currentStep.includes("video_intro_polling")) {
-        liveStatusEl.textContent = "Rendering AI presenter intro - this can take a few minutes";
+        liveStatusEl.textContent = "Rendering presenter intro";
         return;
       }
 
       if (currentStep.includes("video_intro_downloading")) {
-        liveStatusEl.textContent = "Downloading completed intro video";
+        liveStatusEl.textContent = "Downloading completed video";
         return;
       }
 
@@ -120,7 +160,7 @@
       }
 
       if (currentStep.includes("video")) {
-        liveStatusEl.textContent = "Preparing AI presenter intro";
+        liveStatusEl.textContent = "Preparing presenter intro";
         return;
       }
 
@@ -176,6 +216,7 @@
         const stage = data.step || data.stage || "";
 
         applyProgress(progress);
+        updateRenderingPanel(stage);
 
         stateEl.textContent = data.state || data.status || "-";
         stepEl.textContent = prettyStage(stage);
@@ -190,6 +231,7 @@
 
         if (data.state === "complete" || data.status === "complete") {
           applyProgress(100);
+          renderingPanel.classList.add("hidden");
           stateEl.textContent = "complete";
           stepEl.textContent = "Complete";
           liveStatusEl.textContent = "Course ready";
@@ -199,6 +241,7 @@
         }
 
         if (data.state === "failed" || data.status === "failed") {
+          renderingPanel.classList.add("hidden");
           liveStatusEl.textContent = "Course build failed";
           openResultBtn.textContent = "View details";
           openResultBtn.classList.remove("hidden");
@@ -215,7 +258,6 @@
     (async () => {
       try {
         await startJob();
-        hasStarted = true;
       } catch (err) {
         showDebug(`Start error: ${err.message}`);
         return;
