@@ -5,10 +5,12 @@ const lessonList = document.getElementById("lessonList");
 const lessonMeta = document.getElementById("lessonMeta");
 const lessonTitle = document.getElementById("lessonTitle");
 const lessonBody = document.getElementById("lessonBody");
-const presenterScript = document.getElementById("presenterScript");
 const progressFill = document.getElementById("progressFill");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
+
+const imageBlock = document.getElementById("imageBlock");
+const lessonImage = document.getElementById("lessonImage");
 
 const audioBlock = document.getElementById("audioBlock");
 const lessonAudio = document.getElementById("lessonAudio");
@@ -35,7 +37,9 @@ function paragraphise(text) {
     return "<p>No lesson content was generated for this item.</p>";
   }
 
-  return chunks.map((chunk) => `<p>${escapeHtml(chunk).replaceAll("\n", "<br>")}</p>`).join("");
+  return chunks
+    .map((chunk) => `<p>${escapeHtml(chunk).replaceAll("\n", "<br>")}</p>`)
+    .join("");
 }
 
 function renderLessonList() {
@@ -50,7 +54,10 @@ function renderLessonList() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "lesson-item";
-    if (index === currentIndex) button.classList.add("active");
+
+    if (index === currentIndex) {
+      button.classList.add("active");
+    }
 
     const number = lesson.lesson_number || index + 1;
     const title = lesson.lesson_title || `Lesson ${number}`;
@@ -74,6 +81,15 @@ function renderMedia(lesson) {
     videoBlock.classList.add("hidden");
   }
 
+  if (lesson.image) {
+    lessonImage.src = lesson.image;
+    lessonImage.alt = lesson.lesson_title ? `Visual for ${lesson.lesson_title}` : "Lesson visual";
+    imageBlock.classList.remove("hidden");
+  } else {
+    lessonImage.removeAttribute("src");
+    imageBlock.classList.add("hidden");
+  }
+
   if (lesson.audio) {
     lessonAudio.src = lesson.audio;
     audioBlock.classList.remove("hidden");
@@ -88,7 +104,6 @@ function render() {
     lessonMeta.textContent = "No lessons";
     lessonTitle.textContent = "No lesson data available";
     lessonBody.innerHTML = "<p>The course package did not include lesson data.</p>";
-    presenterScript.textContent = "";
     progressFill.style.width = "0%";
     prevBtn.disabled = true;
     nextBtn.disabled = true;
@@ -103,7 +118,6 @@ function render() {
   lessonMeta.textContent = `Lesson ${current} of ${total}`;
   lessonTitle.textContent = lesson.lesson_title || `Lesson ${current}`;
   lessonBody.innerHTML = paragraphise(lesson.lesson_body);
-  presenterScript.textContent = lesson.presenter_script || "No presenter script was generated for this lesson.";
   progressFill.style.width = `${progress}%`;
 
   prevBtn.disabled = currentIndex === 0;
