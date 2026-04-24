@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Job Progress</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Generating Course</h1>
+      <p><strong>Job ID:</strong> <code>{{ job_id }}</code></p>
+
+      <div class="bar-wrap">
+        <div id="bar" class="bar"></div>
+      </div>
+
+      <p class="progress-line">
+        <strong>Progress:</strong> <span id="progressText">0%</span>
+      </p>
+
+      <div class="kv">
+        <div><strong>Status</strong></div>
+        <div><span id="state">Starting...</span></div>
+
+        <div><strong>Step</strong></div>
+        <div><span id="step">Preparing...</span></div>
+
+        <div><strong>Message</strong></div>
+        <div><span id="message">Launching background worker...</span></div>
+
+        <div><strong>Activity</strong></div>
+        <div><span id="liveStatus">Starting pipeline...</span></div>
+      </div>
+
+      <div id="errorBlock" class="hidden spacer-top">
+        <h3>Error</h3>
+        <pre id="errorText"></pre>
+      </div>
+
+      <div id="debugError" class="notice hidden"></div>
+
+      <div class="top-links">
+        <a class="button button-secondary" href="/result/{{ job_id }}">Result</a>
+        <a class="button button-secondary" href="/jobs">All jobs</a>
+        <a class="button button-secondary" href="/">Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const jobId = "{{ job_id }}";
+    const bar = document.getElementById("bar");
+    const stateEl = document.getElementById("state");
+    const stepEl = document.getElementById("step");
+    const messageEl = document.getElementById("message");
+    const progressTextEl = document.getElementById("progressText");
+    const errorBlock = document.getElementById("errorBlock");
+    const errorText = document.getElementById("errorText");
+    const debugError = document.getElementById("debugError");
+    const liveStatusEl = document.getElementById("liveStatus");
+
+    const activityMessages = [
+      "Reading document structure",
+      "Breaking content into lessons",
+      "Generating lesson scripts",
+      "Creating audio narration",
+      "Rendering AI avatar video",
+      "Finalising course output"
+    ];
+
+    let activityIndex = 0;
+
+    function showDebug(message) {
+      debugError.classList.remove("hidden");
+      debugError.textContent = message;
+      console.error(message);
+    }
+
+    function clampProgress(value) {
+      let progress = Number(value);
+      if (!Number.isFinite(progress)) progress = 0;
+      return Math.max(0, Math.min(100, progress));
+    }
+
+    function calculateProgress(data) {
+      const raw = Number(data.progress);
+      if (Number.isFinite(raw) && raw > 1) {
+        return clampProgress(raw);
+      }
+
+      const completed = Number(data.completed_lessons || 0);
+      const total = Number(data.total_lessons || 0);
+      const stage = data.stage || data.step || "";
+
+      if (data.state === "complete" || data.status === "complete") {
+        return 100;
+      }
+
+      if (!total) return 0;
+
+      if (stage === "lessons") {
+        return Math.floor((completed / total) * 60);
+      }
+
+      if (stage === "audio") {
+        return 60 + Math.floor((completed / total) * 30);
+      }
+
+      if (stage === "images") {
+        return 90 + Math.floor((completed / total) * 10);
+      }
+
+      if (stage === "video_intro" || stage === "video_intro_polling") {
+        return Math.max(25, clampProgress(data.progress || 25));
+      }
+
+      if (stage === "video_intro_downloading") {
+        return Math.max(88, clampProgress(data.progress || 88));
+      }
+
+      if (stage === "video_intro_complete") {
+        return Math.max(92, clampProgress(data.progress || 92));
+      }
+
+      if (stage === "building_demo" || stage === "pipeline_complete") {
+        return 95;
+      }
+
+      return 0;
+    }
+
+    function applyProgress(value) {
+      const progress = clampProgress(value);
+      bar.style.width = `${progress}%`;
+      progressTextEl.textContent = `${progress}%`;
+    }
+
+    function updateLiveStatus(step) {
+      const currentStep = String(step || "");
+
+      if (currentStep.includes("video_intro_polling")) {
+        liveStatusEl.textContent = "Rendering AI avatar video - this can take around 5 minutes";
+        return;
+      }
+
+      if (currentStep.includes("video_intro_downloading")) {
+        liveStatusEl.textContent = "Downloading completed intro video";
+        return;
+      }
+
+      if (currentStep.includes("video_intro_complete")) {
+        liveStatusEl.textContent = "Intro video complete";
+        return;
+      }
+
+      if (currentStep.includes("video")) {
+        liveStatusEl.textContent = "Preparing AI avatar video";
+        return;
+      }
+
+      if (currentStep.includes("audio")) {
+        liveStatusEl.textContent = "Generating lesson audio";
+        return;
+      }
+
+      if (currentStep.includes("images")) {
+        liveStatusEl.textContent = "Generating lesson images";
+        return;
+      }
+
+      if (currentStep.includes("lessons")) {
+        liveStatusEl.textContent = "Generating lesson content";
+        return;
+      }
+
+      if (currentStep.includes("building_demo") || currentStep.includes("pipeline_complete")) {
+        liveStatusEl.textContent = "Building final course demo";
+        return;
+      }
+
+      liveStatusEl.textContent = activityMessages[activityIndex % activityMessages.length];
+      activityIndex++;
+    }
+
+    async function startJob() {
+      const res = await fetch(`/start/${jobId}`, {
+        method: "POST",
+        cache: "no-store"
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Start request failed (${res.status}): ${text}`);
+      }
+
+      return await res.json();
+    }
+
+    async function poll() {
+      try {
+        const res = await fetch(`/status/${jobId}`, { cache: "no-store" });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Status request failed (${res.status}): ${text}`);
+        }
+
+        const data = await res.json();
+
+        const computed = calculateProgress(data);
+        applyProgress(computed);
+
+        const stage = data.step || data.stage || "";
+
+        stateEl.textContent = data.state || data.status || "-";
+        stepEl.textContent = stage || "-";
+        messageEl.textContent = data.message || "-";
+
+        updateLiveStatus(stage);
+
+        if (data.error) {
+          errorBlock.classList.remove("hidden");
+          errorText.textContent = data.error;
+        }
+
+        if (data.state === "complete" || data.status === "complete") {
+          applyProgress(100);
+          liveStatusEl.textContent = "Course complete - opening result page";
+          setTimeout(() => {
+            window.location.href = `/result/${jobId}`;
+          }, 500);
+          return;
+        }
+
+        if (data.state === "failed" || data.status === "failed") {
+          liveStatusEl.textContent = "Job failed - opening result page";
+          setTimeout(() => {
+            window.location.href = `/result/${jobId}`;
+          }, 500);
+          return;
+        }
+      } catch (err) {
+        showDebug(`Polling error: ${err.message}`);
+      }
+
+      setTimeout(poll, 2000);
+    }
+
+    (async () => {
+      try {
+        await startJob();
+      } catch (err) {
+        showDebug(`Start error: ${err.message}`);
+        return;
+      }
+
+      poll();
+    })();
+  </script>
+
+  <style>
+    #liveStatus {
+      color: #6b7280;
+      font-style: italic;
+    }
+
+    #liveStatus::after {
+      content: "";
+      display: inline-block;
+      min-width: 18px;
+      animation: dots 1.4s steps(3, end) infinite;
+    }
+
+    @keyframes dots {
+      0% {
+        content: "";
+      }
+      33% {
+        content: ".";
+      }
+      66% {
+        content: "..";
+      }
+      100% {
+        content: "...";
+      }
+    }
+  </style>
+</body>
+</html>

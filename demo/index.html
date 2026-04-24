@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LMS Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <script>
+    window.LESSON_DATA = __LESSON_DATA__;
+  </script>
+
+  <div class="demo-shell">
+    <header class="demo-header">
+      <div class="logo">ARPIM</div>
+      <div>
+        <h1>ARPIM Training</h1>
+        <p>Code Romania - Learning Module</p>
+      </div>
+    </header>
+
+    <main class="demo-layout">
+      <aside class="sidebar">
+        <div id="lessonList" class="lesson-list"></div>
+      </aside>
+
+      <section class="lesson-card">
+        <div class="progress-track">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+
+        <p id="lessonMeta" class="lesson-meta">Lesson 1 of 1</p>
+        <h2 id="lessonTitle">Lesson Title</h2>
+
+        <div id="lessonBody" class="lesson-body"></div>
+
+        <div id="videoBlock" class="media-block hidden">
+          <h3>Course Intro Video</h3>
+          <video id="lessonVideo" controls></video>
+        </div>
+
+        <div id="audioBlock" class="media-block hidden">
+          <audio id="lessonAudio" controls></audio>
+        </div>
+
+        <div class="script-section">
+          <h3>Presenter Script</h3>
+          <div id="presenterScript" class="script-box"></div>
+        </div>
+
+        <div class="nav-row">
+          <button id="prevBtn" type="button">Previous</button>
+          <button id="nextBtn" type="button">Next</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

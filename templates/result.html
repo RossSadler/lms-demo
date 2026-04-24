@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Job Result</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Job Result</h1>
+
+      {% if job.job_id %}
+        <p><strong>Job ID:</strong> <code>{{ job.job_id }}</code></p>
+      {% endif %}
+
+      <div class="kv">
+        <div><strong>Status</strong></div>
+        <div>
+          {% set state = job.state or job.status or "unknown" %}
+          {% if state == "complete" %}
+            <span class="badge badge-complete">complete</span>
+          {% elif state == "running" %}
+            <span class="badge badge-running">running</span>
+          {% elif state == "failed" %}
+            <span class="badge badge-failed">failed</span>
+          {% else %}
+            <span class="badge badge-other">{{ state }}</span>
+          {% endif %}
+        </div>
+
+        <div><strong>Message</strong></div>
+        <div>{{ job.message or "-" }}</div>
+
+        <div><strong>File</strong></div>
+        <div>{{ job.original_filename or "-" }}</div>
+
+        <div><strong>Progress</strong></div>
+        <div>{{ job.progress if job.progress is not none else 0 }}%</div>
+
+        <div><strong>Created</strong></div>
+        <div>{{ job.created_at or "-" }}</div>
+
+        <div><strong>Updated</strong></div>
+        <div>{{ job.updated_at or "-" }}</div>
+      </div>
+
+      <div class="top-links">
+        <a class="button button-secondary" href="/">Home</a>
+        <a class="button button-secondary" href="/jobs">All jobs</a>
+        {% if job.job_id %}
+          <a class="button button-secondary" href="/progress/{{ job.job_id }}">Progress</a>
+        {% endif %}
+        {% if job.state == "complete" and job.demo_path %}
+          <a class="button" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if job.state == "complete" and job.video and job.video.video_path %}
+      <div class="card">
+        <h2>Course Intro Video</h2>
+        <video controls width="720" style="max-width: 100%; border-radius: 8px;">
+          <source src="/video/{{ job.video.video_path.replace('\\', '/') }}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    {% endif %}
+
+    {% if job.error %}
+      <div class="card">
+        <h2>Error</h2>
+        <pre>{{ job.error }}</pre>
+      </div>
+    {% endif %}
+
+    {% if job.traceback %}
+      <div class="card">
+        <h2>Traceback</h2>
+        <pre>{{ job.traceback }}</pre>
+      </div>
+    {% endif %}
+  </div>
+</body>
+</html>

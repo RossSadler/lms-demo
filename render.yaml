@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: lms-demo
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app -c gunicorn.conf.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEMO_SAFE_MODE
+        value: "true"
+      - key: HEYGEN_ENABLED
+        value: "false"
+      - key: MAX_UPLOAD_MB
+        value: "50"
+      - key: OPENAI_LESSON_MODEL
+        value: gpt-4.1-mini
+      - key: OPENAI_IMAGE_MODEL
+        value: gpt-image-1
+      - key: ELEVENLABS_MODEL
+        value: eleven_multilingual_v2
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+      - key: HEYGEN_API_KEY
+        sync: false
+      - key: HEYGEN_AVATAR_ID
+        sync: false
+      - key: HEYGEN_VOICE_ID
+        sync: false
