@@ -64,7 +64,7 @@
         <div><strong>Source file</strong></div>
         <div>{{ job.original_filename or "-" }}</div>
 
-        <div><strong>Status</strong></div>
+        <div><strong>Progress</strong></div>
         <div>{{ job.message or "-" }}</div>
 
         <div><strong>Lessons</strong></div>
@@ -75,13 +75,13 @@
           {% endif %}
         </div>
 
-        <div><strong>Audio</strong></div>
+        <div><strong>Narration</strong></div>
         <div>{{ "Enabled" if job.run_audio else "Off" }}</div>
 
         <div><strong>Visuals</strong></div>
         <div>{{ "Enabled" if job.run_images else "Off" }}</div>
 
-        <div><strong>Intro video</strong></div>
+        <div><strong>Presenter video</strong></div>
         <div>{{ "Enabled" if job.run_video else "Off" }}</div>
 
         <div><strong>Updated</strong></div>
@@ -89,9 +89,103 @@
       </div>
     </section>
 
+
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Export course</p>
+          <h2>Delivery options</h2>
+          <p class="muted">
+            This course can be delivered to different learning platforms.
+            Export formats are configured based on your final LMS environment.
+          </p>
+        </div>
+        <span class="badge badge-running">Preview only</span>
+      </div>
+
+      <div class="export-grid">
+        <div class="export-card active">
+          <div class="export-top">
+            <strong>HTML course demo</strong>
+            <span class="badge badge-complete">available now</span>
+          </div>
+          <p>
+            Interactive browser-based preview for reviewing the generated course structure,
+            lesson content, media, and navigation.
+          </p>
+          {% if job.job_id and job.demo_path %}
+            <a class="button button-small" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>
+          {% endif %}
+        </div>
+
+        <div class="export-card">
+          <div class="export-top">
+            <strong>LifterLMS</strong>
+            <span class="badge badge-other">planned</span>
+          </div>
+          <p>Structured WordPress/LifterLMS export for course and lesson creation.</p>
+          <span class="export-note">Configured during production setup</span>
+        </div>
+
+        <div class="export-card">
+          <div class="export-top">
+            <strong>LearnDash</strong>
+            <span class="badge badge-other">planned</span>
+          </div>
+          <p>WordPress LMS package for LearnDash course, lesson, and module structure.</p>
+          <span class="export-note">Configured during production setup</span>
+        </div>
+
+        <div class="export-card">
+          <div class="export-top">
+            <strong>Tutor LMS</strong>
+            <span class="badge badge-other">planned</span>
+          </div>
+          <p>WordPress-based course export for Tutor LMS environments.</p>
+          <span class="export-note">Configured during production setup</span>
+        </div>
+
+        <div class="export-card">
+          <div class="export-top">
+            <strong>SCORM 1.2 package</strong>
+            <span class="badge badge-other">planned</span>
+          </div>
+          <p>Standard LMS package for platforms such as Moodle, TalentLMS, Docebo, and SAP Litmos.</p>
+          <span class="export-note">Available in production version</span>
+        </div>
+
+        <div class="export-card">
+          <div class="export-top">
+            <strong>Moodle package</strong>
+            <span class="badge badge-other">planned</span>
+          </div>
+          <p>Moodle-compatible delivery package based on the generated course structure.</p>
+          <span class="export-note">Configured during production setup</span>
+        </div>
+
+        <div class="export-card">
+          <div class="export-top">
+            <strong>xAPI package</strong>
+            <span class="badge badge-other">planned</span>
+          </div>
+          <p>Activity-tracking package for learning record stores and advanced LMS reporting.</p>
+          <span class="export-note">Available in production version</span>
+        </div>
+
+        <div class="export-card">
+          <div class="export-top">
+            <strong>Assets package</strong>
+            <span class="badge badge-other">planned</span>
+          </div>
+          <p>Downloadable bundle of generated visuals, narration, video files, and lesson content.</p>
+          <span class="export-note">Available in production version</span>
+        </div>
+      </div>
+    </section>
+
     {% if state == "complete" and job.video and job.video.video_path %}
       <section class="card">
-        <h2>Course intro video</h2>
+        <h2>Presenter video</h2>
         <video controls width="720" style="max-width: 100%; border-radius: 16px;">
           <source src="/video/{{ job.video.video_path.replace('\\', '/') }}" type="video/mp4">
           Your browser does not support the video tag.

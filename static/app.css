@@ -674,3 +674,77 @@ pre {
     align-items: flex-start;
   }
 }
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.export-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fff;
+  transition: 0.2s ease;
+}
+
+.export-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.export-card.active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.export-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+/* =========================
+   EXPORT PANEL
+========================= */
+
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.export-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: #fff;
+  transition: 0.2s ease;
+}
+
+.export-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.export-card.active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.export-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.export-note {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
