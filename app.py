@@ -51,6 +51,44 @@ app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_UPLOAD_MB", "50")) * 1024 
 
 ACTIVE_THREADS = {}
 ACTIVE_THREADS_LOCK = threading.Lock()
+@app.route("/export/lifter/<job_id>")
+def export_lifter(job_id):
+    import zipfile
+
+    if not job_exists(job_id):
+        return jsonify({"ok": False, "error": "Course build not found"}), 404
+
+    job = get_job_status(job_id)
+    job_dir = ensure_job_dir(job_id)
+    dist_dir = job_dir / "dist"
+
+    if not dist_dir.exists() or not (dist_dir / "index.html").exists():
+        return jsonify(
+            {
+                "ok": False,
+                "error": "Course package is not ready yet. Please wait for the course build to complete.",
+            }
+        ), 400
+
+    safe_name = Path(job.get("original_filename") or "course").stem
+    safe_name = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in safe_name).strip("_") or "course"
+
+    zip_path = job_dir / f"{safe_name}_lifter_course_package.zip"
+
+    if zip_path.exists():
+        zip_path.unlink()
+
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file in dist_dir.rglob("*"):
+            if file.is_file():
+                zipf.write(file, arcname=str(file.relative_to(dist_dir)))
+
+    return send_file(
+        zip_path,
+        as_attachment=True,
+        download_name=zip_path.name,
+        mimetype="application/zip",
+    )
 
 
 def utc_now_iso() -> str:

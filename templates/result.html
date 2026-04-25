@@ -108,7 +108,7 @@
 
       <div id="exportNotice" class="export-notice hidden">
         <strong id="exportNoticeTitle">Preparing export</strong>
-        <span id="exportNoticeText">This export format is configured during production setup.</span>
+        <span id="exportNoticeText">Additional export formats are configured during production setup.</span>
       </div>
 
       <div class="export-grid">
@@ -128,8 +128,23 @@
           {% endif %}
         </div>
 
+        <div class="export-card active export-card-download">
+          <div class="export-card-header">
+            <div class="export-icon">WP</div>
+            <div class="export-title-row">
+              <strong>LifterLMS / HTML package</strong>
+              <span class="badge badge-complete">available now</span>
+            </div>
+          </div>
+          <p>Download a complete course package including lessons, media, and structure ready for LMS deployment.</p>
+          {% if job.job_id and job.demo_path %}
+            <a class="button button-small export-action" href="/export/lifter/{{ job.job_id }}">Download course package</a>
+          {% else %}
+            <button class="button button-small export-action" type="button" disabled>Package unavailable</button>
+          {% endif %}
+        </div>
+
         {% set exports = [
-          ("WP", "LifterLMS", "Structured WordPress/LifterLMS export for course and lesson creation."),
           ("LD", "LearnDash", "WordPress LMS package for LearnDash course, lesson, and module structure."),
           ("TL", "Tutor LMS", "WordPress-based course export for Tutor LMS environments."),
           ("SC", "SCORM 1.2 package", "Standard LMS package for platforms such as Moodle, TalentLMS, Docebo, and SAP Litmos."),
