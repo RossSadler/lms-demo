@@ -53,7 +53,7 @@
       </div>
 
       <div id="errorBlock" class="hidden spacer-top">
-        <h3>Error</h3>
+        <h3>Build details</h3>
         <pre id="errorText"></pre>
       </div>
 
@@ -85,12 +85,11 @@
     const startedAt = Date.now();
 
     const activityMessages = [
-      "Understanding your document structure",
-      "Identifying key learning topics",
-      "Designing the lesson flow",
-      "Writing training content",
-      "Preparing narration options",
-      "Packaging the course demo"
+      "Analyzing your document",
+      "Structuring lessons",
+      "Writing lesson content",
+      "Creating media assets",
+      "Finalising your course demo"
     ];
 
     let activityIndex = 0;
@@ -124,17 +123,82 @@
       progressTextEl.textContent = `${progress}%`;
     }
 
-    function prettyStage(stage) {
-      const value = String(stage || "").replaceAll("_", " ");
-      if (!value) return "-";
-      return value.charAt(0).toUpperCase() + value.slice(1);
+    function friendlyState(state) {
+      if (state === "uploaded") return "Queued";
+      if (state === "running") return "Building";
+      if (state === "complete") return "Ready";
+      if (state === "failed") return "Needs attention";
+      return state || "-";
+    }
+
+    function friendlyStage(stage) {
+      const value = String(stage || "");
+
+      if (value.includes("uploaded")) return "Queued";
+      if (value.includes("starting")) return "Preparing course";
+      if (value.includes("parsing") || value.includes("parsed")) return "Analyzing document";
+      if (value.includes("lessons")) return "Writing lessons";
+      if (value.includes("audio")) return "Generating narration";
+      if (value.includes("images")) return "Creating visuals";
+      if (value.includes("video_intro")) return "Rendering presenter video";
+      if (value.includes("pipeline_complete")) return "Finalising course";
+      if (value.includes("building_demo") || value.includes("demo_ready")) return "Packaging demo";
+      if (value.includes("complete")) return "Complete";
+      if (value.includes("failed")) return "Needs attention";
+
+      return value.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "-";
+    }
+
+    function friendlyMessage(data) {
+      const stage = String(data.step || data.stage || "");
+      const raw = String(data.message || "");
+
+      if (stage.includes("video_intro_polling")) {
+        return "Your digital presenter is being prepared. This can take a few minutes.";
+      }
+
+      if (stage.includes("video_intro_downloading")) {
+        return "Finalising your presenter video and adding it to the course.";
+      }
+
+      if (stage.includes("video_intro_complete")) {
+        return "Your presenter video is ready.";
+      }
+
+      if (stage.includes("video_intro")) {
+        return "Preparing your presenter video.";
+      }
+
+      if (stage.includes("images")) {
+        return raw.replace(/Image/g, "Visual").replace(/image/g, "visual") || "Creating supporting visuals.";
+      }
+
+      if (stage.includes("audio")) {
+        return raw.replace(/Audio/g, "Narration").replace(/audio/g, "narration") || "Generating narration.";
+      }
+
+      if (stage.includes("lessons")) {
+        return raw || "Writing lesson content.";
+      }
+
+      if (stage.includes("pipeline_complete") || stage.includes("building_demo")) {
+        return "Finalising your course demo.";
+      }
+
+      if (stage.includes("complete")) {
+        return "Your course demo is ready.";
+      }
+
+      return raw || activityMessages[activityIndex % activityMessages.length];
     }
 
     function updateRenderingPanel(stage) {
       const currentStep = String(stage || "");
-      const isVideoStage = currentStep.includes("video_intro_polling") || currentStep.includes("video_intro");
+      const isVideoStage = currentStep.includes("video_intro") &&
+        !currentStep.includes("complete") &&
+        !currentStep.includes("failed");
 
-      if (isVideoStage && !currentStep.includes("complete") && !currentStep.includes("failed")) {
+      if (isVideoStage) {
         renderingPanel.classList.remove("hidden");
       } else {
         renderingPanel.classList.add("hidden");
@@ -145,32 +209,32 @@
       const currentStep = String(stage || "");
 
       if (currentStep.includes("video_intro_polling")) {
-        liveStatusEl.textContent = "Rendering presenter intro";
+        liveStatusEl.textContent = "Rendering presenter video";
         return;
       }
 
       if (currentStep.includes("video_intro_downloading")) {
-        liveStatusEl.textContent = "Downloading completed video";
+        liveStatusEl.textContent = "Finalising presenter video";
         return;
       }
 
       if (currentStep.includes("video_intro_complete")) {
-        liveStatusEl.textContent = "Intro video complete";
+        liveStatusEl.textContent = "Presenter video ready";
         return;
       }
 
       if (currentStep.includes("video")) {
-        liveStatusEl.textContent = "Preparing presenter intro";
+        liveStatusEl.textContent = "Preparing presenter video";
         return;
       }
 
       if (currentStep.includes("audio")) {
-        liveStatusEl.textContent = "Creating lesson narration";
+        liveStatusEl.textContent = "Generating narration";
         return;
       }
 
       if (currentStep.includes("images")) {
-        liveStatusEl.textContent = "Creating supporting visuals";
+        liveStatusEl.textContent = "Creating visuals";
         return;
       }
 
@@ -180,7 +244,7 @@
       }
 
       if (currentStep.includes("building_demo") || currentStep.includes("pipeline_complete")) {
-        liveStatusEl.textContent = "Packaging the course demo";
+        liveStatusEl.textContent = "Finalising course demo";
         return;
       }
 
@@ -203,12 +267,11 @@
 
         applyProgress(progress);
         updateRenderingPanel(stage);
-
-        stateEl.textContent = data.state || data.status || "-";
-        stepEl.textContent = prettyStage(stage);
-        messageEl.textContent = data.message || "-";
-
         updateLiveStatus(stage);
+
+        stateEl.textContent = friendlyState(data.state || data.status);
+        stepEl.textContent = friendlyStage(stage);
+        messageEl.textContent = friendlyMessage(data);
 
         if (data.error) {
           errorBlock.classList.remove("hidden");
@@ -218,54 +281,32 @@
         if (data.state === "complete" || data.status === "complete") {
           applyProgress(100);
           renderingPanel.classList.add("hidden");
-          stateEl.textContent = "complete";
+          stateEl.textContent = "Ready";
           stepEl.textContent = "Complete";
           liveStatusEl.textContent = "Course ready";
-          messageEl.textContent = data.message || "Your course demo is ready.";
+          messageEl.textContent = "Your course demo is ready.";
           openResultBtn.classList.remove("hidden");
           return;
         }
 
         if (data.state === "failed" || data.status === "failed") {
           renderingPanel.classList.add("hidden");
-          liveStatusEl.textContent = "Course build failed";
+          stateEl.textContent = "Needs attention";
+          stepEl.textContent = "Build stopped";
+          liveStatusEl.textContent = "Course build needs attention";
           openResultBtn.textContent = "View details";
           openResultBtn.classList.remove("hidden");
           return;
         }
 
       } catch (err) {
-        showDebug(`Polling error: ${err.message}`);
+        showDebug(`Live progress error: ${err.message}`);
       }
 
-      setTimeout(poll, 2000);
+      setTimeout(poll, 1800);
     }
 
-    async function startWithRetry(retries = 5) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await startJob();
-      return true;
-    } catch (err) {
-      console.warn("Start retry:", i + 1);
-
-      if (i === retries - 1) {
-        showDebug(`Start error: ${err.message}`);
-        return false;
-      }
-
-      await new Promise(r => setTimeout(r, 400));
-    }
-  }
-}
-
-(async () => {
-  const started = await startWithRetry();
-
-  if (!started) return;
-
-  poll();
-})();
+    poll();
   </script>
 </body>
 </html>
