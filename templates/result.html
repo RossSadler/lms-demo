@@ -90,108 +90,76 @@
     </section>
 
 
-    <section class="card">
-      <div class="section-heading">
+    <section class="card export-panel">
+      <div class="export-panel-top">
+        <span class="architecture-pill">Production-ready architecture</span>
+        <span class="badge badge-running">Preview only</span>
+      </div>
+
+      <div class="section-heading export-heading">
         <div>
-          <p class="eyebrow">Export course</p>
-          <h2>Delivery options</h2>
+          <p class="eyebrow">Export & delivery</p>
+          <h2>Export & Delivery</h2>
           <p class="muted">
-            This course can be delivered to different learning platforms.
-            Export formats are configured based on your final LMS environment.
+            Your course is ready to deploy across LMS platforms and delivery formats.
           </p>
         </div>
-        <span class="badge badge-running">Preview only</span>
+      </div>
+
+      <div id="exportNotice" class="export-notice hidden">
+        <strong id="exportNoticeTitle">Preparing export</strong>
+        <span id="exportNoticeText">This export format is configured during production setup.</span>
       </div>
 
       <div class="export-grid">
         <div class="export-card active">
-          <div class="export-top">
-            <strong>HTML course demo</strong>
-            <span class="badge badge-complete">available now</span>
+          <div class="export-card-header">
+            <div class="export-icon">▣</div>
+            <div class="export-title-row">
+              <strong>HTML course demo</strong>
+              <span class="badge badge-complete">available now</span>
+            </div>
           </div>
-          <p>
-            Interactive browser-based preview for reviewing the generated course structure,
-            lesson content, media, and navigation.
-          </p>
+          <p>Fully interactive browser-based course preview with navigation, media, and structure.</p>
           {% if job.job_id and job.demo_path %}
-            <a class="button button-small" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>
+            <a class="button button-small export-action" href="/demo/{{ job.job_id }}/" target="_blank">Open demo</a>
+          {% else %}
+            <button class="button button-small export-action" type="button" disabled>Demo unavailable</button>
           {% endif %}
         </div>
 
-        <div class="export-card">
-          <div class="export-top">
-            <strong>LifterLMS</strong>
-            <span class="badge badge-other">planned</span>
-          </div>
-          <p>Structured WordPress/LifterLMS export for course and lesson creation.</p>
-          <span class="export-note">Configured during production setup</span>
-        </div>
+        {% set exports = [
+          ("WP", "LifterLMS", "Structured WordPress/LifterLMS export for course and lesson creation."),
+          ("LD", "LearnDash", "WordPress LMS package for LearnDash course, lesson, and module structure."),
+          ("TL", "Tutor LMS", "WordPress-based course export for Tutor LMS environments."),
+          ("SC", "SCORM 1.2 package", "Standard LMS package for platforms such as Moodle, TalentLMS, Docebo, and SAP Litmos."),
+          ("M", "Moodle package", "Moodle-compatible delivery package based on the generated course structure."),
+          ("API", "xAPI package", "Activity-tracking package for learning record stores and advanced LMS reporting."),
+          ("ZIP", "Assets package", "Downloadable bundle of generated visuals, narration, video files, and lesson content.")
+        ] %}
 
-        <div class="export-card">
-          <div class="export-top">
-            <strong>LearnDash</strong>
-            <span class="badge badge-other">planned</span>
+        {% for icon, title, body in exports %}
+          <div class="export-card">
+            <div class="export-card-header">
+              <div class="export-icon">{{ icon }}</div>
+              <div class="export-title-row">
+                <strong>{{ title }}</strong>
+                <span class="badge badge-other">planned</span>
+              </div>
+            </div>
+            <p>{{ body }}</p>
+            <button class="button button-secondary button-small fake-export" type="button" data-export="{{ title }}">
+              Preview export
+            </button>
           </div>
-          <p>WordPress LMS package for LearnDash course, lesson, and module structure.</p>
-          <span class="export-note">Configured during production setup</span>
-        </div>
+        {% endfor %}
+      </div>
 
-        <div class="export-card">
-          <div class="export-top">
-            <strong>Tutor LMS</strong>
-            <span class="badge badge-other">planned</span>
-          </div>
-          <p>WordPress-based course export for Tutor LMS environments.</p>
-          <span class="export-note">Configured during production setup</span>
-        </div>
-
-        <div class="export-card">
-          <div class="export-top">
-            <strong>SCORM 1.2 package</strong>
-            <span class="badge badge-other">planned</span>
-          </div>
-          <p>Standard LMS package for platforms such as Moodle, TalentLMS, Docebo, and SAP Litmos.</p>
-          <span class="export-note">Available in production version</span>
-        </div>
-
-        <div class="export-card">
-          <div class="export-top">
-            <strong>Moodle package</strong>
-            <span class="badge badge-other">planned</span>
-          </div>
-          <p>Moodle-compatible delivery package based on the generated course structure.</p>
-          <span class="export-note">Configured during production setup</span>
-        </div>
-
-        <div class="export-card">
-          <div class="export-top">
-            <strong>xAPI package</strong>
-            <span class="badge badge-other">planned</span>
-          </div>
-          <p>Activity-tracking package for learning record stores and advanced LMS reporting.</p>
-          <span class="export-note">Available in production version</span>
-        </div>
-
-        <div class="export-card">
-          <div class="export-top">
-            <strong>Assets package</strong>
-            <span class="badge badge-other">planned</span>
-          </div>
-          <p>Downloadable bundle of generated visuals, narration, video files, and lesson content.</p>
-          <span class="export-note">Available in production version</span>
-        </div>
+      <div class="export-footer">
+        <span class="export-footer-icon">✓</span>
+        <span>Export formats are generated from the same structured course data.</span>
       </div>
     </section>
-
-    {% if state == "complete" and job.video and job.video.video_path %}
-      <section class="card">
-        <h2>Presenter video</h2>
-        <video controls width="720" style="max-width: 100%; border-radius: 16px;">
-          <source src="/video/{{ job.video.video_path.replace('\\', '/') }}" type="video/mp4">
-          Your browser does not support the video tag.
-        </video>
-      </section>
-    {% endif %}
 
     {% if job.error %}
       <section class="card">
@@ -207,5 +175,35 @@
       </section>
     {% endif %}
   </div>
+  <script>
+    const exportNotice = document.getElementById("exportNotice");
+    const exportNoticeTitle = document.getElementById("exportNoticeTitle");
+    const exportNoticeText = document.getElementById("exportNoticeText");
+    const fakeExportButtons = document.querySelectorAll(".fake-export");
+
+    fakeExportButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const exportName = button.dataset.export || "Export";
+        const originalText = button.textContent;
+
+        button.disabled = true;
+        button.classList.add("is-loading");
+        button.textContent = "Checking format...";
+
+        exportNotice.classList.remove("hidden");
+        exportNoticeTitle.textContent = `${exportName} preview`;
+        exportNoticeText.textContent = "Checking export requirements for this course build...";
+
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+          button.classList.remove("is-loading");
+
+          exportNoticeTitle.textContent = `${exportName} planned`;
+          exportNoticeText.textContent = "This export route is available in the production version and configured for the final LMS environment.";
+        }, 950);
+      });
+    });
+  </script>
 </body>
 </html>
