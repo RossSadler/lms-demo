@@ -11,7 +11,7 @@
     <section class="card progress-card">
       <p class="eyebrow">Course build in progress</p>
       <h1>Building your training course</h1>
-      <p class="muted">The system is reading your document and turning it into structured LMS content.</p>
+      <p class="muted">Your document is being transformed into structured LMS content.</p>
 
       <div class="bar-wrap">
         <div id="bar" class="bar"></div>
@@ -32,23 +32,23 @@
           <span></span>
         </div>
         <div>
-          <strong>HeyGen is rendering your presenter intro</strong>
+          <strong>Rendering presenter video</strong>
           <p>This stage can take a few minutes. The page is still working.</p>
         </div>
       </div>
 
       <div class="status-grid">
         <div class="status-tile">
-          <span>Current status</span>
+          <span>Current progress</span>
           <strong id="state">Starting</strong>
         </div>
         <div class="status-tile">
-          <span>Process</span>
+          <span>Current stage</span>
           <strong id="step">Preparing</strong>
         </div>
         <div class="status-tile status-tile-wide">
           <span>What is happening</span>
-          <strong id="message">Launching background worker</strong>
+          <strong id="message">Starting your course build</strong>
         </div>
       </div>
 
@@ -188,20 +188,6 @@
       activityIndex++;
     }
 
-    async function startJob() {
-      const res = await fetch(`/start/${jobId}`, {
-        method: "POST",
-        cache: "no-store"
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Start request failed (${res.status}): ${text}`);
-      }
-
-      return await res.json();
-    }
-
     async function poll() {
       try {
         const res = await fetch(`/status/${jobId}`, { cache: "no-store" });
@@ -255,16 +241,31 @@
       setTimeout(poll, 2000);
     }
 
-    (async () => {
-      try {
-        await startJob();
-      } catch (err) {
+    async function startWithRetry(retries = 5) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await startJob();
+      return true;
+    } catch (err) {
+      console.warn("Start retry:", i + 1);
+
+      if (i === retries - 1) {
         showDebug(`Start error: ${err.message}`);
-        return;
+        return false;
       }
 
-      poll();
-    })();
+      await new Promise(r => setTimeout(r, 400));
+    }
+  }
+}
+
+(async () => {
+  const started = await startWithRetry();
+
+  if (!started) return;
+
+  poll();
+})();
   </script>
 </body>
 </html>

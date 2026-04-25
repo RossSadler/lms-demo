@@ -203,7 +203,7 @@ def upload():
         input_path=str(input_path),
     )
 
-    update_job(
+    status = update_job(
         job_id,
         run_audio=run_audio,
         run_images=run_images,
@@ -215,8 +215,32 @@ def upload():
         batch_size=batch_size,
         max_total_lessons=max_total_lessons,
         requested_lessons=max_total_lessons,
-        message="Document uploaded. Ready to build your training course.",
+        message="Document uploaded. Starting your course build.",
     )
+
+    options = {
+        "run_lessons": True,
+        "run_audio": status.get("run_audio") is True,
+        "run_images": status.get("run_images") is True,
+        "run_video": status.get("run_video") is True and HEYGEN_ENABLED,
+        "fast_mode": status.get("fast_mode") is True,
+        "batch_size": int(status.get("batch_size", 5) or 5),
+        "max_total_lessons": int(status.get("max_total_lessons", 5) or 5),
+        "requested_lessons": int(status.get("requested_lessons", status.get("max_total_lessons", 5)) or 5),
+        "demo_safe_mode": DEMO_SAFE_MODE,
+    }
+
+    with ACTIVE_THREADS_LOCK:
+        existing = ACTIVE_THREADS.get(job_id)
+
+        if not existing or not existing.is_alive():
+            thread = threading.Thread(
+                target=run_job_background,
+                args=(job_id, str(input_path), options),
+                daemon=True,
+            )
+            ACTIVE_THREADS[job_id] = thread
+            thread.start()
 
     return redirect(url_for("progress_page", job_id=job_id))
 
@@ -224,7 +248,7 @@ def upload():
 @app.route("/start/<job_id>", methods=["POST"])
 def start_job(job_id):
     if not job_exists(job_id):
-        return jsonify({"ok": False, "error": "Job not found"}), 404
+        return jsonify({"ok": False, "error": "Course build not found"}), 404
 
     status = get_job_status(job_id)
     current_state = status.get("state")
@@ -235,7 +259,7 @@ def start_job(job_id):
                 "ok": True,
                 "job_id": job_id,
                 "state": current_state,
-                "message": f"Job already {current_state}.",
+                "message": f"Course build already {current_state}.",
             }
         )
 
@@ -270,7 +294,7 @@ def start_job(job_id):
                     "ok": True,
                     "job_id": job_id,
                     "state": "running",
-                    "message": "Job already running.",
+                    "message": "Course build already running.",
                 }
             )
 
@@ -303,7 +327,7 @@ def progress_page(job_id):
 @app.route("/status/<job_id>", methods=["GET"])
 def job_status(job_id):
     if not job_exists(job_id):
-        return jsonify({"ok": False, "error": "Job not found"}), 404
+        return jsonify({"ok": False, "error": "Course build not found"}), 404
 
     status = get_job_status(job_id)
     return jsonify(status)
@@ -373,7 +397,7 @@ def serve_video(filepath):
 @app.route("/delete/<job_id>", methods=["POST"])
 def delete_job(job_id):
     if not job_exists(job_id):
-        return jsonify({"ok": False, "error": "Job not found"}), 404
+        return jsonify({"ok": False, "error": "Course build not found"}), 404
 
     job_dir = ensure_job_dir(job_id)
 
