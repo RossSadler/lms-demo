@@ -136,9 +136,14 @@
               <span class="badge badge-complete">available now</span>
             </div>
           </div>
-          <p>Download a complete course package including lessons, media, and structure ready for LMS deployment.</p>
+          <p>Download a complete course package including lessons, media, navigation, and player-ready structure.</p>
           {% if job.job_id and job.demo_path %}
-            <a class="button button-small export-action" href="/export/lifter/{{ job.job_id }}">Download course package</a>
+            <a class="button button-small export-action" href="/export/lifter/{{ job.job_id }}">
+              Download &amp; open locally
+            </a>
+            <div class="export-helper">
+              Works instantly - no LMS required. Just unzip and open <strong>index.html</strong>
+            </div>
           {% else %}
             <button class="button button-small export-action" type="button" disabled>Package unavailable</button>
           {% endif %}
