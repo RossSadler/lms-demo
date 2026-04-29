@@ -231,7 +231,13 @@ def build_lesson_content(lesson, job_dir, index):
 </div>
 """.strip()
 
-    lesson_body += "<div style='margin-top:30px;'></div>"
+        lesson_body = f"""
+<div class="ai-course-player">
+  <div class="ai-course-card">
+    {lesson_body}
+  </div>
+</div>
+""".strip()
 
     return lesson_body
 
