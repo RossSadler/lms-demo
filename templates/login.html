@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - AI Course Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
+</head>
+<body class="login-body">
+  <main class="login-shell">
+    <section class="login-brand-panel">
+      <div class="login-glow"></div>
+      <div class="login-orbit login-orbit-one"></div>
+      <div class="login-orbit login-orbit-two"></div>
+
+      <div class="login-brand-content">
+        <p class="eyebrow">Private demo access</p>
+        <h1>AI Course Generator</h1>
+        <p class="login-copy">
+          Turn Word documents into structured, media-rich training courses in minutes.
+        </p>
+
+        <div class="login-steps">
+          <div>
+            <strong>01</strong>
+            <span>Upload document</span>
+          </div>
+          <div>
+            <strong>02</strong>
+            <span>Generate lessons</span>
+          </div>
+          <div>
+            <strong>03</strong>
+            <span>Open course demo</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-card">
+      <div class="login-card-top">
+        <span class="login-icon">AI</span>
+        <div>
+          <p class="eyebrow">Welcome back</p>
+          <h2>Sign in</h2>
+        </div>
+      </div>
+
+      <p class="muted">Secure access - authorised users only.</p>
+
+      {% if error %}
+        <div class="notice">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" class="login-form">
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" type="text" name="username" autocomplete="username" required autofocus />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" name="password" autocomplete="current-password" required />
+        </div>
+
+        <button class="login-button" type="submit">Access demo</button>
+      </form>
+
+      <div class="login-trust-row">
+        <span>Protected upload area</span>
+        <span>Private course builds</span>
+      </div>
+
+      <p class="login-footnote">
+        Generated courses, exports, media files, and build history stay behind this login.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

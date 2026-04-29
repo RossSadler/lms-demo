@@ -7,10 +7,32 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="app-shell">
+
+  <div class="app-nav">
+    <div class="nav-inner">
+
+      <a href="/" class="nav-brand">
+        <span class="nav-mark">AI</span>
+         <span class="nav-text">
+          <strong>Course Generator</strong>
+          <small>Private client demo</small>
+        </span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/" class="nav-link">Create</a>
+        <a href="/jobs" class="nav-link">History</a>
+        <a href="/demo/sample/" class="nav-link" target="_blank">Instant demo</a>
+        <a href="/logout" class="nav-cta">Logout</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="app-shell with-nav">
     <section class="card">
       <div class="section-heading">
-        <div><p class="eyebrow">Build history</p><h1>Course builds</h1><p class="muted">Review generated course demos and previous runs.</p></div>
+        <div><p class="eyebrow">History</p><h1>Course builds</h1><p class="muted">Review generated course demos and previous runs.</p></div>
         <a class="button button-secondary" href="/">Create new course</a>
       </div>
       {% if jobs %}

@@ -73,21 +73,20 @@ function renderLessonList() {
 }
 
 function renderMedia(lesson) {
+  // --- VIDEO ---
   if (lesson.video) {
-    // Show video ONLY
     lessonVideo.src = lesson.video;
+    lessonVideo.load(); // 🔑 critical fix
     videoBlock.classList.remove("hidden");
 
-    // Hide image if video exists
     lessonImage.removeAttribute("src");
     imageBlock.classList.add("hidden");
-
   } else {
-    // No video → hide video
+    lessonVideo.pause();
     lessonVideo.removeAttribute("src");
+    lessonVideo.load();
     videoBlock.classList.add("hidden");
 
-    // Show image if available
     if (lesson.image) {
       lessonImage.src = lesson.image;
       lessonImage.alt = lesson.lesson_title
@@ -100,12 +99,15 @@ function renderMedia(lesson) {
     }
   }
 
-  // Audio unchanged
+  // --- AUDIO ---
   if (lesson.audio) {
     lessonAudio.src = lesson.audio;
+    lessonAudio.load(); // 🔑 critical fix
     audioBlock.classList.remove("hidden");
   } else {
+    lessonAudio.pause();
     lessonAudio.removeAttribute("src");
+    lessonAudio.load();
     audioBlock.classList.add("hidden");
   }
 }

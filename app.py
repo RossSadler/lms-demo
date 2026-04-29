@@ -5,6 +5,9 @@ import threading
 from pathlib import Path
 from datetime import datetime, timezone
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import (
     Flask,
     render_template,
@@ -15,6 +18,7 @@ from flask import (
     send_from_directory,
     send_file,
     abort,
+    session,
 )
 from werkzeug.utils import secure_filename
 
@@ -35,14 +39,16 @@ BASE_DIR = Path(__file__).resolve().parent
 RUNS_DIR = Path(os.getenv("RUNS_DIR", BASE_DIR / "runs")).resolve()
 DEMO_SAFE_MODE = os.getenv("DEMO_SAFE_MODE", "true").lower() in {"1", "true", "yes", "on"}
 HEYGEN_ENABLED = os.getenv("HEYGEN_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
-
+APP_USERNAME = os.getenv("APP_USERNAME", "admin")
+APP_PASSWORD = os.getenv("APP_PASSWORD", "changeme123")
+SAMPLE_DEMO_DIR = Path(os.getenv("SAMPLE_DEMO_DIR", BASE_DIR / "sample_demo")).resolve()
 
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(
     __name__,
     static_folder="static",
-    static_url_path="/static"
+    static_url_path="/static",
 )
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -51,6 +57,45 @@ app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_UPLOAD_MB", "50")) * 1024 
 
 ACTIVE_THREADS = {}
 ACTIVE_THREADS_LOCK = threading.Lock()
+
+
+@app.before_request
+def require_login():
+    allowed_routes = {"login", "static", "health"}
+
+    if request.endpoint in allowed_routes:
+        return
+
+    if request.endpoint and request.endpoint.startswith("static"):
+        return
+
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        if username == APP_USERNAME and password == APP_PASSWORD:
+            session["logged_in"] = True
+            return redirect(url_for("index"))
+
+        error = "Invalid credentials"
+
+    return render_template("login.html", error=error)
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 @app.route("/export/lifter/<job_id>")
 def export_lifter(job_id):
     import zipfile
@@ -73,7 +118,7 @@ def export_lifter(job_id):
     safe_name = Path(job.get("original_filename") or "course").stem
     safe_name = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in safe_name).strip("_") or "course"
 
-    zip_path = job_dir / f"{safe_name}_lifter_course_package.zip"
+    zip_path = job_dir / f"{safe_name}_html_course_package.zip"
 
     if zip_path.exists():
         zip_path.unlink()
@@ -89,6 +134,65 @@ def export_lifter(job_id):
         download_name=zip_path.name,
         mimetype="application/zip",
     )
+
+
+@app.route("/export/wordpress/<job_id>", methods=["POST"])
+def export_wordpress(job_id):
+    if not job_exists(job_id):
+        return jsonify({"ok": False, "error": "Course build not found"}), 404
+
+    job = get_job_status(job_id)
+    job_dir = ensure_job_dir(job_id)
+    json_path = job_dir / "output" / "json" / "all_lessons.json"
+
+    if not json_path.exists():
+        return jsonify(
+            {
+                "ok": False,
+                "error": "Lesson JSON is missing. Please generate the course first.",
+            }
+        ), 400
+
+    original_filename = job.get("original_filename") or "Generated Training Course"
+    course_title = Path(original_filename).stem
+
+    try:
+        from pipeline.lifter_export import export_to_wordpress
+
+        result = export_to_wordpress(
+            str(json_path),
+            course_title=course_title,
+        )
+
+        if not result or not result.get("ok"):
+            error = result.get("error") if isinstance(result, dict) else "WordPress export failed"
+            return jsonify({"ok": False, "error": error}), 500
+
+        update_job(
+            job_id,
+            wordpress_export=result,
+            message=f"Published to LifterLMS: {result.get('course_title')}",
+        )
+
+        return jsonify(result)
+
+    except Exception as exc:
+        traceback_text = traceback.format_exc()
+
+        update_job(
+            job_id,
+            wordpress_export_error=str(exc),
+            wordpress_export_traceback=traceback_text,
+            message="LifterLMS export failed.",
+        )
+
+        return jsonify(
+            {
+                "ok": False,
+                "error": str(exc),
+                "traceback": traceback_text,
+            }
+        ), 500
 
 
 def utc_now_iso() -> str:
@@ -157,7 +261,12 @@ def run_job_background(job_id: str, input_path: str, options: dict) -> None:
 @app.route("/", methods=["GET"])
 def index():
     jobs = list_recent_jobs(limit=10)
-    return render_template("index.html", jobs=jobs, heygen_enabled=HEYGEN_ENABLED, demo_safe_mode=DEMO_SAFE_MODE)
+    return render_template(
+        "index.html",
+        jobs=jobs,
+        heygen_enabled=HEYGEN_ENABLED,
+        demo_safe_mode=DEMO_SAFE_MODE,
+    )
 
 
 @app.route("/upload", methods=["POST"])
@@ -185,8 +294,10 @@ def upload():
     run_audio = form_checkbox("run_audio", default=False)
     run_images = form_checkbox("run_images", default=False)
     run_video = form_checkbox("run_video", default=False)
+
     if not HEYGEN_ENABLED:
         run_video = False
+
     fast_mode = form_checkbox("fast_mode", default=True)
     smart_defaults = form_checkbox("smart_defaults", default=False)
     no_limit = form_checkbox("no_limit", default=False)
@@ -384,6 +495,29 @@ def result_page(job_id):
 def jobs_page():
     jobs = list_recent_jobs(limit=100)
     return render_template("jobs.html", jobs=jobs)
+
+
+@app.route("/demo/sample/", methods=["GET"])
+def sample_demo_index():
+    if not SAMPLE_DEMO_DIR.exists() or not (SAMPLE_DEMO_DIR / "index.html").exists():
+        return render_template(
+            "result.html",
+            job={
+                "state": "missing",
+                "job_id": None,
+                "message": "Sample demo is not installed. Add an index.html file inside the sample_demo folder.",
+            },
+        ), 404
+
+    return send_from_directory(SAMPLE_DEMO_DIR, "index.html")
+
+
+@app.route("/demo/sample/<path:filename>", methods=["GET"])
+def sample_demo_asset(filename):
+    if not SAMPLE_DEMO_DIR.exists():
+        abort(404)
+
+    return send_from_directory(SAMPLE_DEMO_DIR, filename)
 
 
 @app.route("/demo/<job_id>/", methods=["GET"])

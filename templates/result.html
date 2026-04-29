@@ -7,7 +7,29 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="app-shell narrow-shell">
+
+  <div class="app-nav">
+    <div class="nav-inner">
+
+      <a href="/" class="nav-brand">
+        <span class="nav-mark">AI</span>
+         <span class="nav-text">
+          <strong>Course Generator</strong>
+          <small>Private client demo</small>
+        </span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/" class="nav-link">Create</a>
+        <a href="/jobs" class="nav-link">History</a>
+        <a href="/demo/sample/" class="nav-link" target="_blank">Instant demo</a>
+        <a href="/logout" class="nav-cta">Logout</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="app-shell narrow-shell with-nav">
     <section class="card result-hero">
       {% set state = job.state or job.status or "unknown" %}
 
@@ -86,9 +108,18 @@
 
         <div><strong>Updated</strong></div>
         <div>{{ job.updated_at or "-" }}</div>
+
+        {% if job.wordpress_export %}
+          <div><strong>LifterLMS export</strong></div>
+          <div>
+            Published as <strong>{{ job.wordpress_export.course_title }}</strong>
+            {% if job.wordpress_export.course_edit_url %}
+              <br><a href="{{ job.wordpress_export.course_edit_url }}" target="_blank">Open in WordPress</a>
+            {% endif %}
+          </div>
+        {% endif %}
       </div>
     </section>
-
 
     <section class="card export-panel">
       <div class="export-panel-top">
@@ -130,13 +161,13 @@
 
         <div class="export-card active export-card-download">
           <div class="export-card-header">
-            <div class="export-icon">WP</div>
+            <div class="export-icon">ZIP</div>
             <div class="export-title-row">
-              <strong>LifterLMS / HTML package</strong>
+              <strong>HTML course package</strong>
               <span class="badge badge-complete">available now</span>
             </div>
           </div>
-          <p>Download a complete course package including lessons, media, navigation, and player-ready structure.</p>
+          <p>Download a complete local course package including lessons, media, navigation, and player-ready structure.</p>
           {% if job.job_id and job.demo_path %}
             <a class="button button-small export-action" href="/export/lifter/{{ job.job_id }}">
               Download &amp; open locally
@@ -149,13 +180,39 @@
           {% endif %}
         </div>
 
+        <div class="export-card active">
+          <div class="export-card-header">
+            <div class="export-icon">WP</div>
+            <div class="export-title-row">
+              <strong>Publish to LifterLMS</strong>
+              <span class="badge badge-complete">available now</span>
+            </div>
+          </div>
+          <p>Create the course, section, lessons, and media directly in WordPress using the LifterLMS API.</p>
+          {% if job.job_id and state == "complete" %}
+            <button
+              id="publishLifterBtn"
+              class="button button-small export-action"
+              type="button"
+              data-job-id="{{ job.job_id }}"
+            >
+              Publish to LifterLMS
+            </button>
+            <div class="export-helper">
+              Uses the source filename as the course title and uploads generated media.
+            </div>
+          {% else %}
+            <button class="button button-small export-action" type="button" disabled>Publish unavailable</button>
+          {% endif %}
+        </div>
+
         {% set exports = [
           ("LD", "LearnDash", "WordPress LMS package for LearnDash course, lesson, and module structure."),
           ("TL", "Tutor LMS", "WordPress-based course export for Tutor LMS environments."),
           ("SC", "SCORM 1.2 package", "Standard LMS package for platforms such as Moodle, TalentLMS, Docebo, and SAP Litmos."),
           ("M", "Moodle package", "Moodle-compatible delivery package based on the generated course structure."),
           ("API", "xAPI package", "Activity-tracking package for learning record stores and advanced LMS reporting."),
-          ("ZIP", "Assets package", "Downloadable bundle of generated visuals, narration, video files, and lesson content.")
+          ("AS", "Assets package", "Downloadable bundle of generated visuals, narration, video files, and lesson content.")
         ] %}
 
         {% for icon, title, body in exports %}
@@ -177,7 +234,7 @@
 
       <div class="export-footer">
         <span class="export-footer-icon">✓</span>
-        <span>Export formats are generated from the same structured course data.</span>
+         <span>Export formats are generated from the same structured course data.</span>
       </div>
     </section>
 
@@ -195,11 +252,19 @@
       </section>
     {% endif %}
   </div>
+
   <script>
     const exportNotice = document.getElementById("exportNotice");
     const exportNoticeTitle = document.getElementById("exportNoticeTitle");
     const exportNoticeText = document.getElementById("exportNoticeText");
     const fakeExportButtons = document.querySelectorAll(".fake-export");
+    const publishLifterBtn = document.getElementById("publishLifterBtn");
+
+    function showNotice(title, text) {
+      exportNotice.classList.remove("hidden");
+      exportNoticeTitle.textContent = title;
+      exportNoticeText.textContent = text;
+    }
 
     fakeExportButtons.forEach((button) => {
       button.addEventListener("click", () => {
@@ -210,20 +275,76 @@
         button.classList.add("is-loading");
         button.textContent = "Checking format...";
 
-        exportNotice.classList.remove("hidden");
-        exportNoticeTitle.textContent = `${exportName} preview`;
-        exportNoticeText.textContent = "Checking export requirements for this course build...";
+        showNotice(`${exportName} preview`, "Checking export requirements for this course build...");
 
         setTimeout(() => {
           button.textContent = originalText;
           button.disabled = false;
           button.classList.remove("is-loading");
 
-          exportNoticeTitle.textContent = `${exportName} planned`;
-          exportNoticeText.textContent = "This export route is available in the production version and configured for the final LMS environment.";
+          showNotice(
+            `${exportName} planned`,
+            "This export route is available in the production version and configured for the final LMS environment."
+          );
         }, 950);
       });
     });
+
+    if (publishLifterBtn) {
+      publishLifterBtn.addEventListener("click", async () => {
+        const jobId = publishLifterBtn.dataset.jobId;
+        const originalText = publishLifterBtn.textContent;
+
+        const ok = confirm("Publish this generated course to LifterLMS now?");
+        if (!ok) return;
+
+        publishLifterBtn.disabled = true;
+        publishLifterBtn.classList.add("is-loading");
+        publishLifterBtn.textContent = "Publishing...";
+
+        showNotice(
+          "Publishing to LifterLMS",
+          "Creating the course, lessons, and media in WordPress. This may take a minute."
+        );
+
+        try {
+          const response = await fetch(`/export/wordpress/${jobId}`, {
+            method: "POST",
+            headers: {
+              "Accept": "application/json"
+            }
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || !data.ok) {
+            throw new Error(data.error || "LifterLMS export failed.");
+          }
+
+          publishLifterBtn.textContent = "Published";
+          publishLifterBtn.classList.remove("is-loading");
+
+          let message = `Published "${data.course_title}" with ${data.lesson_count} lessons.`;
+
+          if (data.course_edit_url) {
+            message += " Open the WordPress course from the build summary after refreshing this page.";
+          }
+
+          showNotice("LifterLMS export complete", message);
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 1300);
+
+        } catch (err) {
+          publishLifterBtn.disabled = false;
+          publishLifterBtn.classList.remove("is-loading");
+          publishLifterBtn.textContent = originalText;
+
+          showNotice("LifterLMS export failed", err.message);
+        }
+      });
+    }
   </script>
 </body>
 </html>

@@ -7,7 +7,29 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="app-shell narrow-shell">
+
+  <div class="app-nav">
+    <div class="nav-inner">
+
+      <a href="/" class="nav-brand">
+        <span class="nav-mark">AI</span>
+         <span class="nav-text">
+          <strong>Course Generator</strong>
+          <small>Private client demo</small>
+        </span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/" class="nav-link">Create</a>
+        <a href="/jobs" class="nav-link">History</a>
+        <a href="/demo/sample/" class="nav-link" target="_blank">Instant demo</a>
+        <a href="/logout" class="nav-cta">Logout</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="app-shell narrow-shell with-nav">
     <section class="card progress-card">
       <p class="eyebrow">Course build in progress</p>
       <h1>Building your training course</h1>
@@ -27,9 +49,9 @@
 
       <div id="renderingPanel" class="rendering-panel hidden">
         <div class="rendering-orb">
-          <span></span>
-          <span></span>
-          <span></span>
+           <span></span>
+           <span></span>
+           <span></span>
         </div>
         <div>
           <strong>Rendering presenter video</strong>
@@ -39,15 +61,15 @@
 
       <div class="status-grid">
         <div class="status-tile">
-          <span>Current progress</span>
+           <span>Current progress</span>
           <strong id="state">Starting</strong>
         </div>
         <div class="status-tile">
-          <span>Current stage</span>
+           <span>Current stage</span>
           <strong id="step">Preparing</strong>
         </div>
         <div class="status-tile status-tile-wide">
-          <span>What is happening</span>
+           <span>What is happening</span>
           <strong id="message">Starting your course build</strong>
         </div>
       </div>

@@ -7,7 +7,29 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" />
 </head>
 <body>
-  <div class="app-shell">
+
+  <div class="app-nav">
+    <div class="nav-inner">
+
+      <a href="/" class="nav-brand">
+        <span class="nav-mark">AI</span>
+         <span class="nav-text">
+          <strong>Course Generator</strong>
+          <small>Private client demo</small>
+        </span>
+      </a>
+
+      <div class="nav-actions">
+        <a href="/" class="nav-link">Create</a>
+        <a href="/jobs" class="nav-link">History</a>
+        <a href="/demo/sample/" class="nav-link" target="_blank">Instant demo</a>
+        <a href="/logout" class="nav-cta">Logout</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="app-shell with-nav">
     <header class="hero">
       <div>
         <p class="eyebrow">Client demo</p>
@@ -15,11 +37,25 @@
         <p class="hero-copy">Turn a Word document into a structured LMS-style training course with lessons, narration options, and a ready-to-view demo output.</p>
       </div>
       <div class="hero-panel">
-        <div class="hero-stat"><strong>01</strong><span>Upload document</span></div>
-        <div class="hero-stat"><strong>02</strong><span>Generate course</span></div>
-        <div class="hero-stat"><strong>03</strong><span>Open demo</span></div>
+        <div class="hero-stat"><strong>01</strong> <span>Upload document</span></div>
+        <div class="hero-stat"><strong>02</strong> <span>Generate course</span></div>
+        <div class="hero-stat"><strong>03</strong> <span>Open demo</span></div>
       </div>
     </header>
+
+    <section class="card instant-demo-card">
+      <div class="instant-demo-copy">
+        <p class="eyebrow">Instant preview</p>
+        <h2>See the course experience first</h2>
+        <p class="muted">
+          Open a ready-made sample course immediately - no upload, no waiting, no API usage.
+        </p>
+      </div>
+      <div class="instant-demo-actions">
+        <a class="button" href="/demo/sample/" target="_blank">Try instant demo</a>
+        <span class="help">Best for quick client walkthroughs.</span>
+      </div>
+    </section>
 
     {% if error %}<div class="notice">{{ error }}</div>{% endif %}
 
@@ -43,14 +79,14 @@
           <div class="option-panel">
             <h3>Output options</h3>
             <div class="checkbox-group">
-              <label class="checkbox-card"><input type="checkbox" name="run_audio" /><span><strong>Generate audio</strong><small>Create narration files using ElevenLabs.</small></span></label>
-              <label class="checkbox-card"><input type="checkbox" name="run_images" /><span><strong>Generate visuals</strong><small>Create supporting lesson images. Slower, but useful later.</small></span></label>
+              <label class="checkbox-card"><input type="checkbox" name="run_audio" /> <span><strong>Generate audio</strong><small>Create narration files using ElevenLabs.</small></span></label>
+              <label class="checkbox-card"><input type="checkbox" name="run_images" /> <span><strong>Generate visuals</strong><small>Create supporting lesson images. Slower, but useful later.</small></span></label>
               {% if heygen_enabled %}
-                <label class="checkbox-card"><input type="checkbox" name="run_video" /><span><strong>Generate intro video</strong><small>Create an AI presenter intro with HeyGen.</small></span></label>
+                <label class="checkbox-card"><input type="checkbox" name="run_video" /> <span><strong>Generate intro video</strong><small>Create an AI presenter intro with HeyGen.</small></span></label>
               {% else %}
-                <label class="checkbox-card checkbox-card-disabled"><input type="checkbox" disabled /><span><strong>Intro video disabled</strong><small>HeyGen is switched off for this demo build.</small></span></label>
+                <label class="checkbox-card checkbox-card-disabled"><input type="checkbox" disabled /> <span><strong>Intro video disabled</strong><small>HeyGen is switched off for this demo build.</small></span></label>
               {% endif %}
-              <label class="checkbox-card checkbox-card-recommended"><input type="checkbox" name="fast_mode" checked /><span><strong>Fast mode</strong><small>Recommended for live demos. Creates a smaller sample quickly.</small></span></label>
+              <label class="checkbox-card checkbox-card-recommended"><input type="checkbox" name="fast_mode" checked /> <span><strong>Fast mode</strong><small>Recommended for live demos. Creates a smaller sample quickly.</small></span></label>
             </div>
           </div>
 
@@ -78,7 +114,7 @@
         </div>
 
         <div class="toolbar toolbar-main">
-          <button type="submit">Create course</button>
+          <button type="submit">Create</button>
           <span class="muted">Typical preview: 1-10 minutes depending on selected options.</span>
         </div>
       </form>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Instant Course Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="demo-shell">
+    <aside class="demo-sidebar">
+      <div class="demo-brand">
+        <span>AI</span>
+        <div>
+          <strong>Course Generator</strong>
+          <small>Instant sample course</small>
+        </div>
+      </div>
+
+      <nav id="lessonList" aria-label="Lesson navigation"></nav>
+    </aside>
+
+    <main class="demo-main">
+      <div class="demo-topline">
+        <span class="pill">Instant demo</span>
+        <a href="/" class="back-link">Create your own course</a>
+      </div>
+
+      <section class="lesson-card">
+        <div class="progress-track">
+          <div id="progressFill"></div>
+        </div>
+
+        <p id="lessonMeta" class="eyebrow">Lesson 1 of 3</p>
+        <h1 id="lessonTitle">Why Documents Are Not Courses</h1>
+
+        <div id="mediaPanel" class="media-panel">
+          <div id="videoBlock" class="video-block">
+            <video id="lessonVideo" class="lesson-video" controls playsinline autoplay>
+              <source src="media/lesson_1_intro.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+
+            <button id="playMediaBtn" class="media-start hidden" type="button">
+              Play intro video
+            </button>
+          </div>
+
+          <div id="audioBlock" class="audio-block">
+            <div>
+              <strong>Lesson narration</strong>
+              <p>The intro video plays first. Narration follows after the video ends.</p>
+            </div>
+
+            <audio id="lessonAudio" controls preload="auto">
+              <source src="media/lesson_1_narration.mp3" type="audio/mpeg" />
+              Your browser does not support the audio tag.
+            </audio>
+          </div>
+        </div>
+
+        <div id="visualBlock" class="visual-block"></div>
+
+        <article class="lesson-content">
+          <p id="lessonBody" class="lesson-body">
+            A document can contain useful information, but that does not automatically make it a course.
+            Learners need structure, pacing, explanation, and clear next steps.
+            This demo shows how raw source material can be transformed into a guided learning experience with lessons, narration, video, and supporting visuals.
+          </p>
+        </article>
+
+        <div class="scenario-box">
+          <strong>Course building insight</strong>
+          <p id="scenarioText">
+            The goal is not simply to convert text into pages. The goal is to reshape information into something a learner can follow, understand, and complete.
+          </p>
+        </div>
+
+        <div class="demo-actions">
+          <button id="prevBtn" type="button">Previous</button>
+          <button id="nextBtn" type="button">Next lesson</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
